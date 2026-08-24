@@ -30,6 +30,7 @@ class LiveMarketFetcher:
         """
         try:
             import yfinance as yf
+            import pandas as pd
             yf_sym = SymbolRouter.to_yfinance(asset.symbol)
             ticker = yf.Ticker(yf_sym)
             df = ticker.history(period="1y")
@@ -37,20 +38,34 @@ class LiveMarketFetcher:
             if df is None or df.empty:
                 return None
 
+            df = df.dropna(subset=["Close"])
+            if df.empty:
+                return None
+
             points: List[OHLCVPoint] = []
             for idx, row in df.iterrows():
+                close_val = row.get("Close")
+                if close_val is None or pd.isna(close_val):
+                    continue
+
                 ts = idx.to_pydatetime()
                 if ts.tzinfo is None:
                     ts = ts.replace(tzinfo=timezone.utc)
 
+                open_v = row.get("Open")
+                high_v = row.get("High")
+                low_v = row.get("Low")
+                adj_v = row.get("Adj Close")
+                vol_v = row.get("Volume")
+
                 points.append(OHLCVPoint(
                     timestamp=ts,
-                    open=float(row["Open"]),
-                    high=float(row["High"]),
-                    low=float(row["Low"]),
-                    close=float(row["Close"]),
-                    adjusted_close=float(row.get("Adj Close", row["Close"])),
-                    volume=float(row["Volume"]) if "Volume" in row else None,
+                    open=float(close_val if pd.isna(open_v) else open_v),
+                    high=float(close_val if pd.isna(high_v) else high_v),
+                    low=float(close_val if pd.isna(low_v) else low_v),
+                    close=float(close_val),
+                    adjusted_close=float(close_val if pd.isna(adj_v) else adj_v),
+                    volume=float(vol_v) if vol_v is not None and not pd.isna(vol_v) else None,
                     currency=asset.currency,
                     source_name="yfinance",
                     fetched_at=datetime.now(timezone.utc)

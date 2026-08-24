@@ -116,20 +116,24 @@ async def get_asset_detail(symbol: str):
         raise HTTPException(status_code=404, detail=f"'{symbol}' varlığı evrende bulunamadı")
 
     scan_data = orchestrator.status.results.get(asset.symbol)
-    if not scan_data:
-        # Eğer bu varlık henüz taranmamışsa, anında hesapla
+    
+    # Eğer bu varlık henüz taranmamışsa veya teknik/fiyat verisi eksikse, anında canlı veri çek ve hesapla
+    if not scan_data or not scan_data.get("technicals", {}).get("current_price"):
         from app.scan.pipeline import AssetScanPipeline
         from app.scan.market_fetcher import LiveMarketFetcher
         m_series = LiveMarketFetcher.fetch_market_series_fast(asset)
-        fin_snaps = LiveMarketFetcher.fetch_financial_snapshots_fast(asset)
-        scan_data = AssetScanPipeline.process_asset(asset, m_series, fin_snaps)
-        if scan_data.get("success"):
-            orchestrator.status.results[asset.symbol] = scan_data
+        fin_snaps = LiveMarketFetcher.fetch_financial_snapshots_fast(asset) if asset.requires_financials else []
+        fresh_data = AssetScanPipeline.process_asset(asset, m_series, fin_snaps)
+        if fresh_data.get("success"):
+            orchestrator.status.results[asset.symbol] = fresh_data
+            scan_data = fresh_data
+            orchestrator._save_score_to_db(fresh_data)
 
     return sanitize_for_json({
         "asset": asset,
         "detail": scan_data or {}
     })
+
 
 
 

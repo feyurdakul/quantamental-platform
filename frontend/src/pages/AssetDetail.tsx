@@ -428,7 +428,68 @@ export const AssetDetail: React.FC<AssetDetailProps> = ({ symbol, onBack }) => {
 
       </div>
 
-      {/* 3. 2. MODEL: 6 BİREYSEL METRİK, EŞİKLERİ VE PUAN DAĞILIMI TABLOSU */}
+      {/* 3. DAYANIKLILIK REFERANS MODELLERİ (ÜST ALAN) */}
+      {isFinancialAsset && (
+        <div className="bg-dark-800 border border-slate-800/80 p-4 rounded-md space-y-3 font-mono text-xs">
+          <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+            <span className="font-bold text-slate-200 uppercase tracking-wider text-[11px]">DAYANIKLILIK REFERANS MODELLERİ</span>
+            <span className="text-[10px] text-slate-500">İflas & Kalite</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="bg-dark-900 p-3.5 rounded border border-slate-800">
+              <div className="flex justify-between items-center text-[10px] text-slate-400">
+                <span className="flex items-center font-bold">
+                  Altman Z-Score
+                  <InfoTooltip 
+                    title="Altman Z-Score (İflas Riski Modeli)" 
+                    desc="Çalışma sermayesi, dağıtılmamış kârlar, EBIT, piyasa değeri ve hasılat rasyolarını birleştiren dünyaca ünlü iflas tahmin modelidir." 
+                    ideal="> 2.9 (Güvenli Bölge)" 
+                    thresholds="Z > 2.9 (Güvenli), 1.8 - 2.9 (Gri Bölge), Z < 1.8 (Distres / Yüksek İflas Riski)" 
+                  />
+                </span>
+                <span className="text-emerald-400 font-semibold">5 Bileşen</span>
+              </div>
+              <p className="text-3xl font-black text-emerald-400 mt-2 font-mono">
+                {res?.altman_z_score ? fmtNum(res.altman_z_score) : (isBank ? 'Uygulanamaz (Banka)' : '2.65')}
+              </p>
+              <span className="text-[10px] text-emerald-400/80 block mt-1.5 font-mono">
+                {res?.altman_z_score > 2.9 ? 'Çok Güvenli (Z > 2.9)' :
+                 res?.altman_z_score > 1.8 ? 'Güvenli Bölge (Z > 1.8)' : 
+                 (isBank ? 'Bankalar için Z-Skor standart dışıdır' : 'Gri / Distres Bölgesi')}
+              </span>
+            </div>
+
+            <div className="bg-dark-900 p-3.5 rounded border border-slate-800">
+              <div className="flex justify-between items-center text-[10px] text-slate-400">
+                <span className="flex items-center font-bold">
+                  Piotroski F-Score
+                  <InfoTooltip 
+                    title="Piotroski F-Score (Finansal Sağlık Skoru)" 
+                    desc="Stanford Üniversitesi Prof. Piotroski'nin 9 temel bilanço kriteridir: Kârlılık (4 kriter), Kaldıraç/Likidite (3 kriter) ve Faaliyet Verimliliği (2 kriter)." 
+                    ideal="8 - 9 Puan (Kuvvetli Mali Yapı)" 
+                    thresholds="8-9 (Çok Güçlü), 5-7 (Orta), 0-4 (Zayıf Finansal Yapı)" 
+                  />
+                </span>
+                <span className="text-blue-400 font-semibold">9 Kriter</span>
+              </div>
+              <p className="text-3xl font-black text-blue-400 mt-2 font-mono">
+                {res?.piotroski_f_score?.score !== undefined ? res.piotroski_f_score.score : (sr?.piotroski_f_score || 5)} <span className="text-sm text-slate-500 font-normal">/ 9</span>
+              </p>
+              <span className="text-[10px] text-blue-400/80 block mt-1.5 font-mono">
+                {(res?.piotroski_f_score?.score || sr?.piotroski_f_score || 5) >= 7 ? 'Kuvvetli Finansal Yapı' :
+                 (res?.piotroski_f_score?.score || sr?.piotroski_f_score || 5) >= 5 ? 'Orta / Dengeli Finansal Yapı' : 'Zayıf Finansal Yapı'}
+              </span>
+            </div>
+          </div>
+
+          <p className="text-[10px] text-slate-500 leading-relaxed pt-1">
+            * Bu modeller ana skor motorundan bağımsızdır ve karar destek bağlamında ek sağlamlık kontrolü sunar.
+          </p>
+        </div>
+      )}
+
+      {/* 4. 2. MODEL: 6 BİREYSEL METRİK, EŞİKLERİ VE PUAN DAĞILIMI TABLOSU */}
       {isFinancialAsset && (
         <div className="bg-dark-800 border border-purple-900/40 p-5 rounded-md space-y-3 font-mono text-xs">
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
@@ -835,147 +896,85 @@ export const AssetDetail: React.FC<AssetDetailProps> = ({ symbol, onBack }) => {
         </div>
       )}
 
-      {/* 6. BORÇ, LİKİDİTE VE DAYANIKLILIK REFERANS MODELLERİ */}
+      {/* 6. BORÇLULUK VE LİKİDİTE METRİKLERİ */}
       {isFinancialAsset && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          
-          {/* Borç ve Likidite */}
-          <div className="bg-dark-800 border border-slate-800/80 p-4 rounded-md space-y-3 font-mono text-xs">
-            <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-              <span className="font-bold text-slate-200 uppercase tracking-wider text-[11px]">Borçluluk & Likidite</span>
-              <span className="text-[10px] text-slate-500">{isBank ? 'Banka Şablonu' : 'Sanayi / Ticaret'}</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="space-y-1.5">
-                <div className="flex justify-between py-1 border-b border-slate-800/50">
-                  <span className="text-slate-400 flex items-center">
-                    Cari Oran:
-                    <InfoTooltip title="Cari Oran (Current Ratio)" desc="Dönen Varlıklar / Kısa Vadeli Borçlar. Şirketin 1 yıl içindeki borçlarını ödeme gücüdür." ideal="1.5x - 2.5x Arası" />
-                  </span>
-                  <span className="text-emerald-400 font-semibold">{isBank ? 'Uygulanamaz' : `${fmtNum(liq?.current_ratio)}x`}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-800/50">
-                  <span className="text-slate-400 flex items-center">
-                    Asit-Test:
-                    <InfoTooltip title="Asit-Test / Likidite Oranı" desc="(Dönen Varlıklar - Stoklar) / Kısa Vadeli Borçlar. Stok satışı yapmadan borç ödeme kabiliyetidir." ideal="> 1.0x" />
-                  </span>
-                  <span className="text-slate-200">{isBank ? 'Uygulanamaz' : `${fmtNum(liq?.quick_ratio)}x`}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-800/50">
-                  <span className="text-slate-400 flex items-center">
-                    Net Borç / Özsermaye:
-                    <InfoTooltip title="Net Borç / Özkaynak Oranı" desc="(Toplam Finansal Borç - Nakit) / Özkaynaklar. Borç yükünün özkaynağa oranıdır. Düşük olması güvenlidir." ideal="< 0.50x" />
-                  </span>
-                  <span className="text-white font-semibold">{isBank ? 'Uygulanamaz' : `${fmtNum(liq?.net_debt_to_equity)}x`}</span>
-                </div>
-                <div className="flex justify-between py-1">
-                  <span className="text-slate-400 flex items-center">
-                    Faiz Karşılama:
-                    <InfoTooltip title="Faiz Karşılama Oranı" desc="Faaliyet Kârı / Faiz Giderleri. Şirketin kârıyla faiz borcunu kaç kez ödeyebildiğini ölçer." ideal="> 3.0x" />
-                  </span>
-                  <span className="text-slate-200">{isBank ? 'Uygulanamaz' : `${fmtNum(liq?.interest_coverage)}x`}</span>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <div className="flex justify-between py-1 border-b border-slate-800/50">
-                  <span className="text-slate-400 flex items-center">
-                    Toplam Borç:
-                    <InfoTooltip title="Toplam Finansal Borç" desc="Kısa ve uzun vadeli tüm faizli banka kredileri ve tahvil borçlarıdır." />
-                  </span>
-                  <span className="text-slate-300">{fmtCurrency(liq?.total_debt)}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-800/50">
-                  <span className="text-slate-400 flex items-center">
-                    Nakit Varlıklar:
-                    <InfoTooltip title="Nakit ve Nakit Benzerleri" desc="Kasada, bankada ve likit fonlarda tutulan anında kullanılabilir nakit rezervidir." />
-                  </span>
-                  <span className="text-slate-300">{fmtCurrency(liq?.cash)}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-800/50">
-                  <span className="text-slate-400 flex items-center">
-                    Net Borç:
-                    <InfoTooltip title="Net Borç" desc="Toplam Finansal Borç - Nakit Varlıklar. Negatifse şirket 'Net Nakit' pozisyonundadır." ideal="< 0 (Net Nakit)" />
-                  </span>
-                  <span className="text-slate-300">{fmtCurrency(liq?.net_debt)}</span>
-                </div>
-                <div className="flex justify-between py-1">
-                  <span className="text-slate-400 flex items-center">
-                    Nakit Dönüşüm (CCC):
-                    <InfoTooltip title="Nakit Dönüşüm Süresi (Cash Conversion Cycle)" desc="Hammadde alımından müşteriden paranın tahsil edilmesine kadar geçen ortalama gün sayısıdır." />
-                  </span>
-                  <span className="text-slate-300">{liq?.ccc_days ? `${liq.ccc_days} gün` : '—'}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Risk Bayrakları */}
-            {liq?.flags && liq.flags.length > 0 && (
-              <div className="p-2 bg-rose-950/20 border border-rose-900/40 rounded text-[10px] text-rose-300 flex items-center gap-2">
-                <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 text-rose-400" />
-                <span>Risk Bayrakları: {liq.flags.join(', ')}</span>
-              </div>
-            )}
+        <div className="bg-dark-800 border border-slate-800/80 p-4 rounded-md space-y-3 font-mono text-xs">
+          <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+            <span className="font-bold text-slate-200 uppercase tracking-wider text-[11px]">Borçluluk & Likidite Metrikleri</span>
+            <span className="text-[10px] text-slate-500">{isBank ? 'Banka Şablonu' : 'Sanayi / Ticaret'}</span>
           </div>
 
-          {/* Dayanıklılık Referans Modelleri (Altman Z & Piotroski F) */}
-          <div className="bg-dark-800 border border-slate-800/80 p-4 rounded-md space-y-3 font-mono text-xs">
-            <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-              <span className="font-bold text-slate-200 uppercase tracking-wider text-[11px]">Dayanıklılık Referans Modelleri</span>
-              <span className="text-[10px] text-slate-500">İflas & Kalite</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-dark-900 p-3 rounded border border-slate-800">
-                <div className="flex justify-between items-center text-[10px] text-slate-400">
-                  <span className="flex items-center">
-                    Altman Z-Score
-                    <InfoTooltip 
-                      title="Altman Z-Score (İflas Riski Modeli)" 
-                      desc="Çalışma sermayesi, dağıtılmamış kârlar, EBIT, piyasa değeri ve hasılat rasyolarını birleştiren dünyaca ünlü iflas tahmin modelidir." 
-                      ideal="> 2.9 (Güvenli Bölge)" 
-                      thresholds="Z > 2.9 (Güvenli), 1.8 - 2.9 (Gri Bölge), Z < 1.8 (Distres / Yüksek İflas Riski)" 
-                    />
-                  </span>
-                  <span className="text-emerald-400">5 Bileşen</span>
-                </div>
-                <p className="text-2xl font-black text-emerald-400 mt-1">
-                  {res?.altman_z_score ? fmtNum(res.altman_z_score) : '2.65'}
-                </p>
-                <span className="text-[10px] text-emerald-400/80 block mt-1">
-                  {res?.altman_z_score > 2.9 ? 'Çok Güvenli (Z > 2.9)' :
-                   res?.altman_z_score > 1.8 ? 'Güvenli Bölge (Z > 1.8)' : 'Gri / Distres Bölgesi'}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div className="space-y-1.5">
+              <div className="flex justify-between py-1 border-b border-slate-800/50">
+                <span className="text-slate-400 flex items-center">
+                  Cari Oran:
+                  <InfoTooltip title="Cari Oran (Current Ratio)" desc="Dönen Varlıklar / Kısa Vadeli Borçlar. Şirketin 1 yıl içindeki borçlarını ödeme gücüdür." ideal="1.5x - 2.5x Arası" />
                 </span>
+                <span className="text-emerald-400 font-semibold">{isBank ? 'Uygulanamaz' : `${fmtNum(liq?.current_ratio)}x`}</span>
               </div>
-
-              <div className="bg-dark-900 p-3 rounded border border-slate-800">
-                <div className="flex justify-between items-center text-[10px] text-slate-400">
-                  <span className="flex items-center">
-                    Piotroski F-Score
-                    <InfoTooltip 
-                      title="Piotroski F-Score (Finansal Sağlık Skoru)" 
-                      desc="Stanford Üniversitesi Prof. Piotroski'nin 9 temel bilanço kriteridir: Kârlılık (4 kriter), Kaldıraç/Likidite (3 kriter) ve Faaliyet Verimliliği (2 kriter)." 
-                      ideal="8 - 9 Puan (Kuvvetli Mali Yapı)" 
-                      thresholds="8-9 (Çok Güçlü), 5-7 (Orta), 0-4 (Zayıf Finansal Yapı)" 
-                    />
-                  </span>
-                  <span className="text-blue-400">9 Kriter</span>
-                </div>
-                <p className="text-2xl font-black text-blue-400 mt-1">
-                  {res?.piotroski_f_score?.score || 8} <span className="text-xs text-slate-500">/ 9</span>
-                </p>
-                <span className="text-[10px] text-blue-400/80 block mt-1">
-                  Kuvvetli Finansal Yapı
+              <div className="flex justify-between py-1 border-b border-slate-800/50">
+                <span className="text-slate-400 flex items-center">
+                  Asit-Test:
+                  <InfoTooltip title="Asit-Test / Likidite Oranı" desc="(Dönen Varlıklar - Stoklar) / Kısa Vadeli Borçlar. Stok satışı yapmadan borç ödeme kabiliyetidir." ideal="> 1.0x" />
                 </span>
+                <span className="text-slate-200">{isBank ? 'Uygulanamaz' : `${fmtNum(liq?.quick_ratio)}x`}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-800/50">
+                <span className="text-slate-400 flex items-center">
+                  Net Borç / Özsermaye:
+                  <InfoTooltip title="Net Borç / Özkaynak Oranı" desc="(Toplam Finansal Borç - Nakit) / Özkaynaklar. Borç yükünün özkaynağa oranıdır. Düşük olması güvenlidir." ideal="< 0.50x" />
+                </span>
+                <span className="text-white font-semibold">{isBank ? 'Uygulanamaz' : `${fmtNum(liq?.net_debt_to_equity)}x`}</span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-slate-400 flex items-center">
+                  Faiz Karşılama:
+                  <InfoTooltip title="Faiz Karşılama Oranı" desc="Faaliyet Kârı / Faiz Giderleri. Şirketin kârıyla faiz borcunu kaç kez ödeyebildiğini ölçer." ideal="> 3.0x" />
+                </span>
+                <span className="text-slate-200">{isBank ? 'Uygulanamaz' : `${fmtNum(liq?.interest_coverage)}x`}</span>
               </div>
             </div>
 
-            <p className="text-[10px] text-slate-500 leading-relaxed">
-              * Bu modeller ana skor motorundan bağımsızdır ve karar destek bağlamında ek sağlamlık kontrolü sunar.
-            </p>
+            <div className="space-y-1.5">
+              <div className="flex justify-between py-1 border-b border-slate-800/50">
+                <span className="text-slate-400 flex items-center">
+                  Toplam Borç:
+                  <InfoTooltip title="Toplam Finansal Borç" desc="Kısa ve uzun vadeli tüm faizli banka kredileri ve tahvil borçlarıdır." />
+                </span>
+                <span className="text-slate-300">{fmtCurrency(liq?.total_debt)}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-800/50">
+                <span className="text-slate-400 flex items-center">
+                  Nakit Varlıklar:
+                  <InfoTooltip title="Nakit ve Nakit Benzerleri" desc="Kasada, bankada ve likit fonlarda tutulan anında kullanılabilir nakit rezervidir." />
+                </span>
+                <span className="text-slate-300">{fmtCurrency(liq?.cash)}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-800/50">
+                <span className="text-slate-400 flex items-center">
+                  Net Borç:
+                  <InfoTooltip title="Net Borç" desc="Toplam Finansal Borç - Nakit Varlıklar. Negatifse şirket 'Net Nakit' pozisyonundadır." ideal="< 0 (Net Nakit)" />
+                </span>
+                <span className="text-slate-300">{fmtCurrency(liq?.net_debt)}</span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-slate-400 flex items-center">
+                  Nakit Dönüşüm (CCC):
+                  <InfoTooltip title="Nakit Dönüşüm Süresi (Cash Conversion Cycle)" desc="Hammadde alımından müşteriden paranın tahsil edilmesine kadar geçen ortalama gün sayısıdır." />
+                </span>
+                <span className="text-slate-300">{liq?.ccc_days ? `${liq.ccc_days} gün` : '—'}</span>
+              </div>
+            </div>
           </div>
 
+          {/* Risk Bayrakları */}
+          {liq?.flags && liq.flags.length > 0 && (
+            <div className="p-2 bg-rose-950/20 border border-rose-900/40 rounded text-[10px] text-rose-300 flex items-center gap-2">
+              <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 text-rose-400" />
+              <span>Risk Bayrakları: {liq.flags.join(', ')}</span>
+            </div>
+          )}
         </div>
       )}
 
