@@ -413,6 +413,27 @@ class ScorerEngine:
         from app.engine.rating_model import FundamentalRatingEngine
         fund_rating = FundamentalRatingEngine.compute_rating(valuation, quality, liquidity, is_financial_asset=is_fin)
 
+        # --- ORTAK KONSENSÜS SİNYAL KARAR MOTORU (Bölüm 8.4 Hibrit Sinyal) ---
+        # 10'luk Quantamental Bileşik Skor + 6-Faktör Temel Notu (S, A, B, C, D) Çift Teyidi
+        if is_fin and fund_rating.is_applicable:
+            rl = fund_rating.rating
+            if rl == "S" and final_score >= 7.80:
+                signal = SignalType.STRONG_BUY
+            elif rl in ["S", "A"] and final_score >= 7.20:
+                signal = SignalType.BUY
+            elif rl == "D" or final_score < 3.60:
+                # D notu alan (zarar eden/aşırı borçlu) veya skoru < 3.60 olan hisseler
+                signal = SignalType.STRONG_SELL
+            elif rl == "C" or final_score < 5.20:
+                # C notu alan veya skoru < 5.20 olan zayıf hisseler
+                signal = SignalType.SELL
+            elif rl == "A" and final_score >= 6.50:
+                signal = SignalType.BUY
+            elif rl == "B" and final_score >= 7.50:
+                signal = SignalType.BUY
+            else:
+                signal = SignalType.HOLD
+
         return ScoreResult(
             symbol=asset.symbol,
             composite_score=final_score,

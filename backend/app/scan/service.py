@@ -262,6 +262,7 @@ class ScanOrchestrator:
         for sym, data in self.status.results.items():
             sr: ScoreResult = data.get("score_result")
             if sr:
+                fr = sr.fundamental_rating or {}
                 scored_items.append({
                     "symbol": sym,
                     "composite_score": sr.composite_score,
@@ -271,7 +272,10 @@ class ScanOrchestrator:
                     "rsi14": data.get("technicals", {}).get("rsi14"),
                     "pe_ratio": data.get("valuation", {}).get("pe_ratio"),
                     "altman_z": sr.altman_z_score,
-                    "piotroski_f": sr.piotroski_f_score
+                    "piotroski_f": sr.piotroski_f_score,
+                    "rating_letter": fr.get("rating") if fr else None,
+                    "rating_score": fr.get("total_score") if fr else None,
+                    "fundamental_rating": fr
                 })
 
         # Skorlara göre sıralama (Yüksekten Düşüğe)
