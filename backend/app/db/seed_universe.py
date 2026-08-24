@@ -457,51 +457,8 @@ def build_711_universe() -> list[Asset]:
             requires_financials=True
         ))
 
-    # 3. 🌐 Global Major ETFs (32 ETF)
-    etf_list = [
-        ("SPY", "SPDR S&P 500 ETF Trust", "AMEX"),
-        ("QQQ", "Invesco QQQ Trust (Nasdaq 100)", "NASDAQ"),
-        ("IWM", "iShares Russell 2000 ETF", "AMEX"),
-        ("DIA", "SPDR Dow Jones Industrial Average", "AMEX"),
-        ("VTI", "Vanguard Total Stock Market ETF", "AMEX"),
-        ("VOO", "Vanguard S&P 500 ETF", "AMEX"),
-        ("EEM", "iShares MSCI Emerging Markets ETF", "AMEX"),
-        ("VWO", "Vanguard FTSE Emerging Markets", "AMEX"),
-        ("XLF", "Financial Select Sector SPDR", "AMEX"),
-        ("XLK", "Technology Select Sector SPDR", "AMEX"),
-        ("XLE", "Energy Select Sector SPDR", "AMEX"),
-        ("XLV", "Health Care Select Sector SPDR", "AMEX"),
-        ("XLI", "Industrial Select Sector SPDR", "AMEX"),
-        ("XLY", "Consumer Discretionary Select", "AMEX"),
-        ("XLP", "Consumer Staples Select SPDR", "AMEX"),
-        ("XLU", "Utilities Select Sector SPDR", "AMEX"),
-        ("XLB", "Materials Select Sector SPDR", "AMEX"),
-        ("XLRE", "Real Estate Select Sector SPDR", "AMEX"),
-        ("SMH", "VanEck Semiconductor ETF", "NASDAQ"),
-        ("SOXX", "iShares Semiconductor ETF", "NASDAQ"),
-        ("ARKK", "ARK Innovation ETF", "AMEX"),
-        ("GLD", "SPDR Gold Shares", "AMEX"),
-        ("SLV", "iShares Silver Trust", "AMEX"),
-        ("USO", "United States Oil Fund", "AMEX"),
-        ("TLT", "iShares 20+ Year Treasury Bond", "NASDAQ"),
-        ("IEF", "iShares 7-10 Year Treasury Bond", "NASDAQ"),
-        ("HYG", "iShares iBoxx $ High Yield Corporate", "AMEX"),
-        ("LQD", "iShares iBoxx $ Investment Grade", "AMEX"),
-        ("BND", "Vanguard Total Bond Market ETF", "NASDAQ"),
-        ("VNQ", "Vanguard Real Estate ETF", "AMEX"),
-        ("TUR", "iShares MSCI Turkey ETF", "NASDAQ")
-    ]
+    # (ETFs excluded from fundamental analysis universe)
 
-    for sym, name, exch in etf_list:
-        assets.append(Asset(
-            symbol=f"{exch}:{sym}",
-            name=name,
-            asset_class=AssetClass.ETF,
-            exchange=exch,
-            sector="ETF",
-            currency="USD",
-            requires_financials=False
-        ))
 
     # 4. 🪙 Kripto Paralar (20 Kripto)
     crypto_list = [

@@ -160,7 +160,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectAsset, onNavigateT
           { id: 'ALL', label: 'TÜM EVREN' },
           { id: 'BIST', label: '🇹🇷 BIST 100' },
           { id: 'US', label: '🇺🇸 ABD EQUITIES' },
-          { id: 'ETF', label: '📊 GLOBAL ETF' },
           { id: 'CRYPTO', label: '🪙 KRİPTO' },
           { id: 'FOREX', label: '💱 FX & EMTİA' }
         ].map((tab) => (

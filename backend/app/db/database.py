@@ -125,16 +125,22 @@ def init_db():
             );
             """)
 
-        conn.commit()
-        
-        # Eğer assets tablosu boşsa (ilk kurulum/deployment), 673 varlığı otomatik yükle
+        # ETF'ler temel analiz yapılamadığı için evrenden temizlenir
+        try:
+            cursor.execute("DELETE FROM assets WHERE asset_class = 'ETF'")
+            cursor.execute("DELETE FROM score_results WHERE symbol LIKE 'AMEX:%'")
+            conn.commit()
+        except Exception:
+            pass
+
+        # Eğer assets tablosu boşsa (ilk kurulum/deployment), hisse senedi evrenini otomatik yükle
         cursor.execute("SELECT count(*) as cnt FROM assets")
         row = cursor.fetchone()
         count = row[0] if isinstance(row, tuple) else (row["cnt"] if row else 0)
         conn.close()
 
         if count == 0:
-            print("🚀 Veritabanı ilk kurulumu: 673 varlık evreni otomatik yükleniyor...")
+            print("🚀 Veritabanı ilk kurulumu: Varlık evreni otomatik yükleniyor...")
             try:
                 from app.db.seed_universe import build_711_universe
                 from app.db.repositories import AssetRepository
@@ -146,6 +152,7 @@ def init_db():
 
     except Exception as e:
         print(f"init_db uyarısı: {e}")
+
 
 
 # Uygulama başlatıldığında tabloları ve varlıkları hazırla

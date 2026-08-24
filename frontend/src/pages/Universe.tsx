@@ -103,7 +103,6 @@ export const Universe: React.FC<UniverseProps> = ({ onSelectAsset }) => {
             { id: 'BIST_STOCK', label: '🇹🇷 BIST 100' },
             { id: 'US_STOCK', label: '🇺🇸 ABD' },
             { id: 'BANK_STOCK', label: '🏦 BANKA' },
-            { id: 'ETF', label: '📊 ETF' },
             { id: 'CRYPTO', label: '🪙 KRİPTO' },
             { id: 'FOREX', label: '💱 FX/EMTİA' }
           ].map((tab) => (
