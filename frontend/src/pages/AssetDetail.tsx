@@ -600,7 +600,7 @@ export const AssetDetail: React.FC<AssetDetailProps> = ({ symbol, onBack }) => {
           </div>
           <div>
             <span className="text-slate-500 block text-[10px]">SON GEÇERLİ DÖNEM:</span>
-            <span className="text-slate-200">2024 Yıllık (2024-12-31)</span>
+            <span className="text-slate-200">{detail?.period_end ? `${detail.period_end} (KAP/SEC)` : (asset.requires_financials === false ? 'Uygulanamaz (Teknik)' : 'Son Resmi Bilanço')}</span>
           </div>
           <div>
             <span className="text-slate-500 block text-[10px]">PARA BİRİMİ:</span>
