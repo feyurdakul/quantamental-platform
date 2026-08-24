@@ -207,7 +207,7 @@ class ScanOrchestrator:
             self._is_scanning = False
 
     def _save_score_to_db(self, res: Dict[str, Any]):
-        """Skor sonucunu SQLite/Postgres tablosuna yazar"""
+        """Skor sonucunu SQLite/Postgres (Supabase) tablosuna yazar"""
         sr: Optional[ScoreResult] = res.get("score_result")
         if not sr:
             return
@@ -216,13 +216,14 @@ class ScanOrchestrator:
             conn = get_db_connection()
             cursor = conn.cursor()
             cat_json_str = json.dumps({k: v.model_dump() for k, v in sr.category_scores.items()})
+            flags_json_str = json.dumps(sr.flags or [])
             
             if conn.is_postgres:
                 cursor.execute("""
                 INSERT INTO score_results (
                     symbol, composite_score, confidence_level, signal, coverage,
-                    category_scores_json, altman_z_score, piotroski_f_score, formula_version
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    category_scores_json, altman_z_score, piotroski_f_score, formula_version, flags_json
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (symbol) DO UPDATE SET
                     composite_score = EXCLUDED.composite_score,
                     confidence_level = EXCLUDED.confidence_level,
@@ -231,26 +232,27 @@ class ScanOrchestrator:
                     category_scores_json = EXCLUDED.category_scores_json,
                     altman_z_score = EXCLUDED.altman_z_score,
                     piotroski_f_score = EXCLUDED.piotroski_f_score,
+                    flags_json = EXCLUDED.flags_json,
                     as_of_at = NOW()
                 """, (
                     sr.symbol, sr.composite_score, sr.confidence_level.value, sr.signal.value,
                     sr.coverage, cat_json_str,
-                    sr.altman_z_score, sr.piotroski_f_score, sr.formula_version
+                    sr.altman_z_score, sr.piotroski_f_score, sr.formula_version, flags_json_str
                 ))
             else:
                 cursor.execute("""
                 INSERT OR REPLACE INTO score_results (
                     symbol, composite_score, confidence_level, signal, coverage,
-                    category_scores_json, altman_z_score, piotroski_f_score, formula_version
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    category_scores_json, altman_z_score, piotroski_f_score, formula_version, flags_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     sr.symbol, sr.composite_score, sr.confidence_level.value, sr.signal.value,
                     sr.coverage, cat_json_str,
-                    sr.altman_z_score, sr.piotroski_f_score, sr.formula_version
+                    sr.altman_z_score, sr.piotroski_f_score, sr.formula_version, flags_json_str
                 ))
             conn.commit()
             conn.close()
-        except Exception:
+        except Exception as e:
             pass
 
     def _generate_leaderboards(self) -> Dict[str, List[Dict[str, Any]]]:
