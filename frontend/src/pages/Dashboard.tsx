@@ -212,13 +212,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectAsset, onNavigateT
                 <tbody className="divide-y divide-slate-800/60 font-mono text-xs">
                   {topPotential.length > 0 ? (
                     topPotential.map((item: any) => {
-                      const letter = item.rating_letter || (
-                        item.composite_score >= 8.4 ? 'S' :
-                        item.composite_score >= 7.2 ? 'A' :
-                        item.composite_score >= 5.2 ? 'B' :
-                        item.composite_score >= 3.6 ? 'C' : 'D'
-                      );
-                      const rScore = item.rating_score || (letter === 'S' ? 27 : letter === 'A' ? 22 : 16);
+                      const letter = (item.rating_letter && ['S', 'A', 'B', 'C', 'D'].includes(item.rating_letter)) ? item.rating_letter : null;
+                      const rScore = item.rating_score;
                       return (
                       <tr 
                         key={item.symbol} 
@@ -233,17 +228,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectAsset, onNavigateT
                           <span className="text-slate-500 text-[10px]"> / 10.0</span>
                         </td>
                         <td className="py-2.5">
-                          <div className="flex items-center gap-1.5">
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-black border ${
-                              letter === 'S' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
-                              letter === 'A' ? 'bg-teal-500/20 text-teal-300 border-teal-500/40' :
-                              letter === 'B' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
-                              letter === 'C' ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' : 'bg-rose-700/30 text-rose-400 border-rose-700/50'
-                            }`}>
-                              {letter}
-                            </span>
-                            <span className="text-[10px] text-slate-400">({rScore}/30)</span>
-                          </div>
+                          {letter ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-black border ${
+                                letter === 'S' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
+                                letter === 'A' ? 'bg-teal-500/20 text-teal-300 border-teal-500/40' :
+                                letter === 'B' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
+                                letter === 'C' ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' : 'bg-rose-700/30 text-rose-400 border-rose-700/50'
+                              }`}>
+                                {letter}
+                              </span>
+                              {rScore && <span className="text-[10px] text-slate-400">({rScore}/30)</span>}
+                            </div>
+                          ) : (
+                            <span className="text-slate-600 font-mono text-xs">—</span>
+                          )}
                         </td>
                         <td className="py-2.5">
                           {getSignalBadge(item.signal)}
@@ -306,13 +305,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectAsset, onNavigateT
                 <tbody className="divide-y divide-slate-800/60 font-mono text-xs">
                   {mostRisky.length > 0 ? (
                     mostRisky.map((item: any) => {
-                      const letter = item.rating_letter || (
-                        item.composite_score >= 8.4 ? 'S' :
-                        item.composite_score >= 7.2 ? 'A' :
-                        item.composite_score >= 5.2 ? 'B' :
-                        item.composite_score >= 3.6 ? 'C' : 'D'
-                      );
-                      const rScore = item.rating_score || (letter === 'D' ? 7 : letter === 'C' ? 11 : 15);
+                      const letter = (item.rating_letter && ['S', 'A', 'B', 'C', 'D'].includes(item.rating_letter)) ? item.rating_letter : null;
+                      const rScore = item.rating_score;
                       return (
                       <tr 
                         key={item.symbol} 
@@ -327,17 +321,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectAsset, onNavigateT
                           <span className="text-slate-500 text-[10px]"> / 10.0</span>
                         </td>
                         <td className="py-2.5">
-                          <div className="flex items-center gap-1.5">
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-black border ${
-                              letter === 'S' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
-                              letter === 'A' ? 'bg-teal-500/20 text-teal-300 border-teal-500/40' :
-                              letter === 'B' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
-                              letter === 'C' ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' : 'bg-rose-700/30 text-rose-400 border-rose-700/50'
-                            }`}>
-                              {letter}
-                            </span>
-                            <span className="text-[10px] text-slate-400">({rScore}/30)</span>
-                          </div>
+                          {letter ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-black border ${
+                                letter === 'S' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
+                                letter === 'A' ? 'bg-teal-500/20 text-teal-300 border-teal-500/40' :
+                                letter === 'B' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
+                                letter === 'C' ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' : 'bg-rose-700/30 text-rose-400 border-rose-700/50'
+                              }`}>
+                                {letter}
+                              </span>
+                              {rScore && <span className="text-[10px] text-slate-400">({rScore}/30)</span>}
+                            </div>
+                          ) : (
+                            <span className="text-slate-600 font-mono text-xs">—</span>
+                          )}
                         </td>
                         <td className="py-2.5">
                           {getSignalBadge(item.signal)}

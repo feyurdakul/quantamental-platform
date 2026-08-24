@@ -163,12 +163,8 @@ export const Universe: React.FC<UniverseProps> = ({ onSelectAsset }) => {
                 </tr>
               ) : filteredAssets.length > 0 ? (
                 filteredAssets.map((asset) => {
-                  const ratingLetter = asset.fundamental_rating?.rating || (
-                    asset.composite_score >= 8.4 ? 'S' :
-                    asset.composite_score >= 7.2 ? 'A' :
-                    asset.composite_score >= 5.2 ? 'B' :
-                    asset.composite_score >= 3.6 ? 'C' : 'D'
-                  );
+                  const isStock = ['BIST_STOCK', 'US_STOCK', 'BANK_STOCK'].includes(asset.asset_class) && asset.requires_financials !== false;
+                  const ratingLetter = (isStock && asset.rating_letter && ['S', 'A', 'B', 'C', 'D'].includes(asset.rating_letter)) ? asset.rating_letter : null;
                   return (
                   <tr
                     key={asset.symbol}
@@ -200,7 +196,7 @@ export const Universe: React.FC<UniverseProps> = ({ onSelectAsset }) => {
                       )}
                     </td>
                     <td className="py-2.5 px-4">
-                      {asset.requires_financials !== false ? (
+                      {ratingLetter ? (
                         <span className={`px-2 py-0.5 rounded text-[11px] font-black font-mono border ${
                           ratingLetter === 'S' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
                           ratingLetter === 'A' ? 'bg-teal-500/20 text-teal-300 border-teal-500/40' :
@@ -210,9 +206,10 @@ export const Universe: React.FC<UniverseProps> = ({ onSelectAsset }) => {
                           {ratingLetter}
                         </span>
                       ) : (
-                        <span className="text-slate-600 text-[10px]">NA</span>
+                        <span className="text-slate-600 font-mono text-xs">—</span>
                       )}
                     </td>
+
                     <td className="py-2.5 px-4">
                       {getSignalBadge(asset.signal)}
                     </td>

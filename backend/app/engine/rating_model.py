@@ -83,10 +83,10 @@ class FundamentalRatingEngine:
         """
         if not is_financial_asset:
             return FundamentalRating(
-                total_score=18,
+                total_score=0,
                 max_score=30,
-                rating="B",
-                recommendation="Neutral",
+                rating="—",
+                recommendation="Uygulanamaz",
                 is_applicable=False,
                 metric_breakdown={}
             )

@@ -409,13 +409,14 @@ class ScorerEngine:
             flags.extend(liquidity.get("flags"))
 
         # 2. Skor Modeli: 6-Faktörlü Temel Derecelendirme (6-30 Puan / S, A, B, C, D)
-        is_fin = asset.asset_class in [AssetClass.BIST_STOCK, AssetClass.US_STOCK, AssetClass.BANK_STOCK]
+        is_fin = asset.asset_class in [AssetClass.BIST_STOCK, AssetClass.US_STOCK, AssetClass.BANK_STOCK] and asset.requires_financials is not False
         from app.engine.rating_model import FundamentalRatingEngine
         fund_rating = FundamentalRatingEngine.compute_rating(valuation, quality, liquidity, is_financial_asset=is_fin)
 
         # --- ORTAK KONSENSÜS SİNYAL KARAR MOTORU (Bölüm 8.4 Hibrit Sinyal) ---
-        # 10'luk Quantamental Bileşik Skor + 6-Faktör Temel Notu (S, A, B, C, D) Çift Teyidi
-        if is_fin and fund_rating.is_applicable:
+        # Sadece bilançosu olan hisseler için 6 metrik harf notuyla konsensüs uygulanır.
+        # Harf notu hesaplanamayan varlıklarda (ETF, Kripto, Forex vb.) sinyal İLK SİNYALİMİZE göre belirlenir.
+        if is_fin and fund_rating.is_applicable and fund_rating.rating in ["S", "A", "B", "C", "D"]:
             rl = fund_rating.rating
             if rl == "S" and final_score >= 7.80:
                 signal = SignalType.STRONG_BUY
@@ -433,6 +434,7 @@ class ScorerEngine:
                 signal = SignalType.BUY
             else:
                 signal = SignalType.HOLD
+
 
         return ScoreResult(
             symbol=asset.symbol,
