@@ -36,7 +36,11 @@ def get_db_connection():
     if DATABASE_URL and DATABASE_URL.startswith("postgres"):
         try:
             import psycopg2
-            raw_conn = psycopg2.connect(DATABASE_URL)
+            from urllib.parse import urlparse, urlunparse
+            # Prisma query parametrelerini (?pgbouncer=true vb.) psycopg2 için temizle
+            parsed = urlparse(DATABASE_URL)
+            clean_url = urlunparse((parsed.scheme, parsed.netloc, parsed.path, '', '', ''))
+            raw_conn = psycopg2.connect(clean_url)
             return DBConnectionWrapper(raw_conn, is_postgres=True)
         except Exception as e:
             print(f"PostgreSQL bağlantı hatası ({e}), yerel SQLite veritabanına geçiliyor...")
