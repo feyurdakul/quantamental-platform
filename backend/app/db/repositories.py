@@ -32,6 +32,13 @@ class AssetRepository:
         rows = cursor.fetchall()
         conn.close()
 
+        if not rows and not asset_class and not exchange:
+            # Otomatik fail-safe tohumlama
+            from app.db.seed_universe import build_711_universe
+            universe = build_711_universe()
+            AssetRepository.save_many(universe)
+            return universe
+
         assets = []
         for r in rows:
             assets.append(Asset(
@@ -57,7 +64,15 @@ class AssetRepository:
         conn.close()
 
         if not r:
+            # Eğer tablo boşsa tohumla ve tekrar ara
+            from app.db.seed_universe import build_711_universe
+            universe = build_711_universe()
+            AssetRepository.save_many(universe)
+            for a in universe:
+                if a.symbol.upper() == symbol.upper():
+                    return a
             return None
+
 
         return Asset(
             symbol=r["symbol"],

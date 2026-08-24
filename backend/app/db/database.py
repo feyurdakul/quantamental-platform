@@ -126,10 +126,28 @@ def init_db():
             """)
 
         conn.commit()
+        
+        # Eğer assets tablosu boşsa (ilk kurulum/deployment), 673 varlığı otomatik yükle
+        cursor.execute("SELECT count(*) as cnt FROM assets")
+        row = cursor.fetchone()
+        count = row[0] if isinstance(row, tuple) else (row["cnt"] if row else 0)
         conn.close()
+
+        if count == 0:
+            print("🚀 Veritabanı ilk kurulumu: 673 varlık evreni otomatik yükleniyor...")
+            try:
+                from app.db.seed_universe import build_711_universe
+                from app.db.repositories import AssetRepository
+                universe = build_711_universe()
+                AssetRepository.save_many(universe)
+                print(f"✅ Başarıyla {len(universe)} varlık veritabanına yüklendi.")
+            except Exception as se:
+                print(f"Seed uyarısı: {se}")
+
     except Exception as e:
         print(f"init_db uyarısı: {e}")
 
 
-# Uygulama başlatıldığında tabloları hazırla
+# Uygulama başlatıldığında tabloları ve varlıkları hazırla
 init_db()
+
