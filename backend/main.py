@@ -3,15 +3,27 @@ Quantamental Platform — Ana FastAPI Uygulaması
 sistem_mimari.md Spesifikasyonu Tam Uyumu (7 Sağlayıcılı Hibrit Mimari)
 """
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.routes import router as api_router
+from app.api.routes import router as api_router, daily_scheduler
 from app.api.routes_portfolio import portfolio_router
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Uygulama başladığında 01:30 TR Günlük Otomatik Tarama Zamanlayıcısını Başlat
+    daily_scheduler.start()
+    yield
+    # Kapanışta zamanlayıcıyı güvenle durdur
+    daily_scheduler.stop()
+
 
 app = FastAPI(
     title="Quantamental Platform API",
     description="7 Sağlayıcılı Kurumsal Finansal Analiz ve Skorlama Platformu",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # CORS Ayarları (Frontend bağlantısı için)

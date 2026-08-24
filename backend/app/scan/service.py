@@ -200,6 +200,17 @@ class ScanOrchestrator:
             self.status.stage = "COMPLETED"
             self.status.completed_at = datetime.now(timezone.utc)
 
+            # Tarama bittiğinde Model Portföyü otomatik sinyallere göre senkronize et
+            try:
+                from app.db.repositories import PortfolioRepository
+                lbs = self._generate_leaderboards()
+                PortfolioRepository.sync_auto_signals(
+                    lbs.get("top_potential", []),
+                    lbs.get("most_risky_overvalued", [])
+                )
+            except Exception as pe:
+                print(f"Portföy otomatik senkronizasyon uyarısı: {pe}")
+
         except Exception as global_ex:
             print(f"Tarama genel hatası: {global_ex}")
             self.status.stage = "FAILED"

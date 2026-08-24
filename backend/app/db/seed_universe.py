@@ -457,45 +457,9 @@ def build_711_universe() -> list[Asset]:
             requires_financials=True
         ))
 
-    # (ETFs excluded from fundamental analysis universe)
+    # (ETFs and Cryptos excluded from fundamental analysis universe)
 
-
-    # 4. 🪙 Kripto Paralar (20 Kripto)
-    crypto_list = [
-        ("BTCUSDT", "Bitcoin / Tether"),
-        ("ETHUSDT", "Ethereum / Tether"),
-        ("SOLUSDT", "Solana / Tether"),
-        ("BNBUSDT", "BNB / Tether"),
-        ("XRPUSDT", "XRP / Tether"),
-        ("ADAUSDT", "Cardano / Tether"),
-        ("AVAXUSDT", "Avalanche / Tether"),
-        ("DOGEUSDT", "Dogecoin / Tether"),
-        ("DOTUSDT", "Polkadot / Tether"),
-        ("LINKUSDT", "Chainlink / Tether"),
-        ("NEARUSDT", "NEAR Protocol / Tether"),
-        ("SUIUSDT", "Sui / Tether"),
-        ("APTUSDT", "Aptos / Tether"),
-        ("MATICUSDT", "Polygon / Tether"),
-        ("LTCUSDT", "Litecoin / Tether"),
-        ("BCHUSDT", "Bitcoin Cash / Tether"),
-        ("ATOMUSDT", "Cosmos / Tether"),
-        ("UNIUSDT", "Uniswap / Tether"),
-        ("FETUSDT", "Artificial Superintelligence Alliance"),
-        ("RENDERUSDT", "Render / Tether")
-    ]
-
-    for sym, name in crypto_list:
-        assets.append(Asset(
-            symbol=f"BINANCE:{sym}",
-            name=name,
-            asset_class=AssetClass.CRYPTO,
-            exchange="BINANCE",
-            sector="Crypto",
-            currency="USDT",
-            requires_financials=False
-        ))
-
-    # 5. 💱 Döviz & Emtia (15 Varlık)
+    # 4. 💱 Döviz & Emtia (15 Varlık)
     fx_commodities = [
         ("FX:USDTRY", "Dolar / Türk Lirası", AssetClass.FOREX, "FX", "Forex", "TRY"),
         ("FX:EURTRY", "Euro / Türk Lirası", AssetClass.FOREX, "FX", "Forex", "TRY"),

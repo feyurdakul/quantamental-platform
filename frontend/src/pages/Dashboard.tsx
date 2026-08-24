@@ -60,16 +60,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectAsset, onNavigateT
     topPotential = topPotential.filter((item: any) => {
       if (selectedClass === 'BIST') return item.symbol.startsWith('BIST:');
       if (selectedClass === 'US') return item.symbol.startsWith('NASDAQ:') || item.symbol.startsWith('NYSE:');
-      if (selectedClass === 'ETF') return item.symbol.startsWith('AMEX:') || item.symbol.includes('ETF');
-      if (selectedClass === 'CRYPTO') return item.symbol.startsWith('BINANCE:');
       if (selectedClass === 'FOREX') return item.symbol.startsWith('FX:') || item.symbol.startsWith('TVC:');
       return true;
     });
     mostRisky = mostRisky.filter((item: any) => {
       if (selectedClass === 'BIST') return item.symbol.startsWith('BIST:');
       if (selectedClass === 'US') return item.symbol.startsWith('NASDAQ:') || item.symbol.startsWith('NYSE:');
-      if (selectedClass === 'ETF') return item.symbol.startsWith('AMEX:') || item.symbol.includes('ETF');
-      if (selectedClass === 'CRYPTO') return item.symbol.startsWith('BINANCE:');
       if (selectedClass === 'FOREX') return item.symbol.startsWith('FX:') || item.symbol.startsWith('TVC:');
       return true;
     });
@@ -105,7 +101,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectAsset, onNavigateT
             <p className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">Aktif Evren Büyüklüğü</p>
             <h3 className="text-xl font-bold text-white mt-1 font-mono">{data?.total_assets || 668} Varlık</h3>
             <p className="text-[10px] text-blue-400 mt-0.5 flex items-center gap-1 font-mono">
-              <Layers className="w-3 h-3" /> BIST, ABD, ETF, Kripto, FX
+              <Layers className="w-3 h-3" /> BIST 100, S&P 500, FX & Emtia
             </p>
           </div>
           <div className="w-9 h-9 rounded bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
@@ -160,7 +156,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectAsset, onNavigateT
           { id: 'ALL', label: 'TÜM EVREN' },
           { id: 'BIST', label: '🇹🇷 BIST 100' },
           { id: 'US', label: '🇺🇸 ABD EQUITIES' },
-          { id: 'CRYPTO', label: '🪙 KRİPTO' },
           { id: 'FOREX', label: '💱 FX & EMTİA' }
         ].map((tab) => (
           <button

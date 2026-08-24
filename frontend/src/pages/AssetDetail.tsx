@@ -60,7 +60,12 @@ export const AssetDetail: React.FC<AssetDetailProps> = ({ symbol, onBack }) => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [currencyMode, setCurrencyMode] = useState<'TRY' | 'USD'>('TRY');
+  const [portfolioModalOpen, setPortfolioModalOpen] = useState(false);
   const [addedToPortfolio, setAddedToPortfolio] = useState(false);
+  const [portWeight, setPortWeight] = useState<number>(10);
+  const [portQty, setPortQty] = useState<number>(100);
+  const [portPrice, setPortPrice] = useState<number>(100);
+  const [isAddingPort, setIsAddingPort] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -68,6 +73,9 @@ export const AssetDetail: React.FC<AssetDetailProps> = ({ symbol, onBack }) => {
       try {
         const res = await fetchAssetDetail(symbol);
         setData(res);
+        if (res?.detail?.technicals?.current_price) {
+          setPortPrice(res.detail.technicals.current_price);
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -77,19 +85,36 @@ export const AssetDetail: React.FC<AssetDetailProps> = ({ symbol, onBack }) => {
     load();
   }, [symbol]);
 
-  const handleAddToPortfolio = async () => {
+  const handleOpenPortfolioModal = () => {
+    const curP = data?.detail?.technicals?.current_price || 100.0;
+    setPortPrice(curP);
+    const sig = data?.detail?.score_result?.signal;
+    const sigStr = typeof sig === 'object' ? sig?.value : sig;
+    setPortWeight(sigStr === 'STRONG_BUY' ? 10 : sigStr === 'BUY' ? 7 : 5);
+    setPortfolioModalOpen(true);
+  };
+
+  const handleConfirmAddToPortfolio = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!data?.asset) return;
+    setIsAddingPort(true);
     try {
       await addPortfolioPosition({
         symbol: data.asset.symbol,
         name: data.asset.name,
-        entry_price: data.detail?.technicals?.current_price || 100.0,
-        sector: data.asset.sector
+        entry_price: Number(portPrice),
+        quantity: Number(portQty),
+        target_weight_percent: Number(portWeight),
+        sector: data.asset.sector,
+        is_auto_managed: false
       });
       setAddedToPortfolio(true);
-      setTimeout(() => setAddedToPortfolio(false), 3000);
-    } catch (err) {
-      console.error(err);
+      setPortfolioModalOpen(false);
+      setTimeout(() => setAddedToPortfolio(false), 4000);
+    } catch (err: any) {
+      alert(err.message || 'Portföye eklenirken hata oluştu');
+    } finally {
+      setIsAddingPort(false);
     }
   };
 
@@ -210,7 +235,7 @@ export const AssetDetail: React.FC<AssetDetailProps> = ({ symbol, onBack }) => {
           )}
 
           <button
-            onClick={handleAddToPortfolio}
+            onClick={handleOpenPortfolioModal}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono font-bold transition-colors ${
               addedToPortfolio
                 ? 'bg-emerald-600 text-white'
@@ -987,6 +1012,145 @@ export const AssetDetail: React.FC<AssetDetailProps> = ({ symbol, onBack }) => {
           </div>
         </div>
       </div>
+
+      {/* 8. PORTFÖYE EKLEME MODALI (YÜZDE VE LOT SEÇİMİ) */}
+      {portfolioModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-dark-800 border border-slate-700 rounded-lg max-w-md w-full p-5 space-y-4 font-mono shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-700 pb-3">
+              <div>
+                <h3 className="font-bold text-white text-base">Model Portföye Ekle</h3>
+                <p className="text-xs text-slate-400">{asset.symbol} - {asset.name}</p>
+              </div>
+              <button 
+                onClick={() => setPortfolioModalOpen(false)}
+                className="text-slate-400 hover:text-white text-sm px-2 py-1 bg-dark-900 rounded border border-slate-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmAddToPortfolio} className="space-y-4">
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Hedef Portföy Ağırlığı (%)</label>
+                <div className="grid grid-cols-4 gap-1.5 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => setPortWeight(10)}
+                    className={`py-1.5 text-xs font-bold rounded border transition-colors ${
+                      portWeight === 10
+                        ? 'bg-emerald-600/30 border-emerald-500 text-emerald-300'
+                        : 'bg-dark-900 border-slate-700 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    %10 (Strong)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPortWeight(7)}
+                    className={`py-1.5 text-xs font-bold rounded border transition-colors ${
+                      portWeight === 7
+                        ? 'bg-teal-600/30 border-teal-500 text-teal-300'
+                        : 'bg-dark-900 border-slate-700 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    %7 (Buy)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPortWeight(5)}
+                    className={`py-1.5 text-xs font-bold rounded border transition-colors ${
+                      portWeight === 5
+                        ? 'bg-blue-600/30 border-blue-500 text-blue-300'
+                        : 'bg-dark-900 border-slate-700 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    %5 (Std)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPortWeight(8)}
+                    className={`py-1.5 text-xs font-bold rounded border transition-colors ${
+                      portWeight === 8
+                        ? 'bg-purple-600/30 border-purple-500 text-purple-300'
+                        : 'bg-dark-900 border-slate-700 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    %8 (Özel)
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 bg-dark-900 p-2 rounded border border-slate-700">
+                  <span className="text-xs text-slate-400">Özel Yüzde:</span>
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="1"
+                    max="100"
+                    value={portWeight}
+                    onChange={(e) => setPortWeight(Number(e.target.value))}
+                    className="w-full bg-transparent text-emerald-400 font-bold text-right outline-none text-sm"
+                  />
+                  <span className="text-xs text-slate-500">%</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Alış Fiyatı ({displayCurr})</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    value={portPrice}
+                    onChange={(e) => setPortPrice(Number(e.target.value))}
+                    className="w-full bg-dark-900 border border-slate-700 rounded p-2 text-white text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Miktar / Lot</label>
+                  <input
+                    type="number"
+                    step="1"
+                    min="1"
+                    required
+                    value={portQty}
+                    onChange={(e) => setPortQty(Number(e.target.value))}
+                    className="w-full bg-dark-900 border border-slate-700 rounded p-2 text-white text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 bg-dark-900 rounded border border-slate-800 text-xs space-y-1">
+                <div className="flex justify-between text-slate-400">
+                  <span>Toplam Maliyet:</span>
+                  <span className="text-white font-bold">{fmtNum(portPrice * portQty, ` ${displayCurr}`)}</span>
+                </div>
+                <div className="flex justify-between text-slate-400">
+                  <span>Hedef Portföy Payı:</span>
+                  <span className="text-emerald-400 font-bold">%{portWeight}</span>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setPortfolioModalOpen(false)}
+                  className="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 text-xs font-semibold"
+                >
+                  İptal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isAddingPort}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-bold transition-colors disabled:opacity-50"
+                >
+                  {isAddingPort ? 'Ekleniyor...' : 'Portföye Onayla ve Ekle'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { triggerScan, fetchScanStatus, fetchDashboardSummary } from '../api/client';
+import { triggerScan, fetchScanStatus, fetchDashboardSummary, fetchSchedulerStatus, triggerSchedulerNow } from '../api/client';
 import { 
   Play, 
   RefreshCw, 
@@ -11,7 +11,8 @@ import {
   Cpu,
   Layers,
   Database,
-  Radio
+  Radio,
+  Calendar
 } from 'lucide-react';
 
 interface SettingsProps {
@@ -20,6 +21,7 @@ interface SettingsProps {
 
 export const Settings: React.FC<SettingsProps> = ({ onRefreshAll }) => {
   const [status, setStatus] = useState<any>(null);
+  const [scheduler, setScheduler] = useState<any>(null);
   const [scanning, setScanning] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [backendError, setBackendError] = useState(false);
@@ -41,9 +43,22 @@ export const Settings: React.FC<SettingsProps> = ({ onRefreshAll }) => {
     }
   };
 
+  const loadScheduler = async () => {
+    try {
+      const s = await fetchSchedulerStatus();
+      setScheduler(s);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   useEffect(() => {
     loadStatus();
-    const interval = setInterval(loadStatus, 2000);
+    loadScheduler();
+    const interval = setInterval(() => {
+      loadStatus();
+      loadScheduler();
+    }, 2000);
     return () => clearInterval(interval);
   }, []);
 
@@ -232,6 +247,49 @@ export const Settings: React.FC<SettingsProps> = ({ onRefreshAll }) => {
               {message}
             </p>
           )}
+        </div>
+      </div>
+
+      {/* Gece 01:30 TR Otomatik Cron Zamanlayıcısı Kartı */}
+      <div className="bg-dark-800 border border-emerald-900/40 p-5 rounded-md space-y-3 font-mono text-xs">
+        <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-emerald-400" />
+            <h4 className="font-bold text-xs uppercase tracking-wider text-slate-100">
+              Otomatik Gece Taraması (Cron Scheduler — 01:30 TR)
+            </h4>
+          </div>
+          <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 font-bold border border-emerald-500/30 text-[10px]">
+            {scheduler?.is_active ? '● AKTİF ÇALIŞIYOR' : '○ DEVRE DIŞI'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+          <div className="bg-dark-900 p-3 rounded border border-slate-800">
+            <span className="text-[10px] text-slate-400 block">HEDEF ZAMAN ÇİZELGESİ</span>
+            <span className="text-white font-bold text-sm block mt-1">Her Gece 01:30 (UTC+3)</span>
+            <span className="text-[10px] text-slate-500 mt-0.5 block">Otomatik fiyat ve skor güncellemesi</span>
+          </div>
+
+          <div className="bg-dark-900 p-3 rounded border border-slate-800">
+            <span className="text-[10px] text-slate-400 block">SONRAKİ OTOMATİK ÇALIŞMA</span>
+            <span className="text-emerald-400 font-bold text-sm block mt-1">
+              {scheduler?.next_run_at_tr || 'Hesaplanıyor...'}
+            </span>
+            <span className="text-[10px] text-slate-400 mt-0.5 block">
+              {scheduler?.seconds_until_next_run ? `Kalan: ${Math.floor(scheduler.seconds_until_next_run / 3600)} sa ${Math.floor((scheduler.seconds_until_next_run % 3600) / 60)} dk` : '—'}
+            </span>
+          </div>
+
+          <div className="bg-dark-900 p-3 rounded border border-slate-800">
+            <span className="text-[10px] text-slate-400 block">SON OTOMATİK ÇALIŞMA</span>
+            <span className="text-white font-bold text-sm block mt-1">
+              {scheduler?.last_run_at_tr || 'Henüz Tetiklenmedi'}
+            </span>
+            <span className="text-[10px] text-emerald-400 mt-0.5 block">
+              Toplam Başarılı Tur: {scheduler?.total_automated_runs || 0}
+            </span>
+          </div>
         </div>
       </div>
 

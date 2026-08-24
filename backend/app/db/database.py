@@ -97,9 +97,25 @@ def init_db():
                 name VARCHAR(200) NOT NULL,
                 entry_price NUMERIC(15, 4) NOT NULL,
                 quantity NUMERIC(15, 4) NOT NULL DEFAULT 100,
+                target_weight_percent NUMERIC(5, 2) NOT NULL DEFAULT 10.0,
                 sector VARCHAR(100),
+                is_auto_managed BOOLEAN NOT NULL DEFAULT FALSE,
+                entry_timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            );
+
+            CREATE TABLE IF NOT EXISTS portfolio_trades (
+                id SERIAL PRIMARY KEY,
+                symbol VARCHAR(50) NOT NULL,
+                name VARCHAR(200) NOT NULL,
+                action VARCHAR(30) NOT NULL,
+                price NUMERIC(15, 4) NOT NULL,
+                quantity NUMERIC(15, 4) NOT NULL,
+                total_amount NUMERIC(15, 4) NOT NULL,
+                realized_pnl NUMERIC(15, 4) DEFAULT 0,
+                reason VARCHAR(200),
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             );
             """)
         else:
@@ -139,16 +155,51 @@ def init_db():
                 name TEXT NOT NULL,
                 entry_price REAL NOT NULL,
                 quantity REAL NOT NULL DEFAULT 100,
+                target_weight_percent REAL NOT NULL DEFAULT 10.0,
                 sector TEXT,
+                is_auto_managed INTEGER NOT NULL DEFAULT 0,
+                entry_timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             );
+
+            CREATE TABLE IF NOT EXISTS portfolio_trades (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                symbol TEXT NOT NULL,
+                name TEXT NOT NULL,
+                action TEXT NOT NULL,
+                price REAL NOT NULL,
+                quantity REAL NOT NULL,
+                total_amount REAL NOT NULL,
+                realized_pnl REAL DEFAULT 0,
+                reason TEXT,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
             """)
 
-        # ETF'ler temel analiz yapılamadığı için evrenden temizlenir
+        # Tablo şema kolon güncellemeleri (Migration garantisi)
         try:
-            cursor.execute("DELETE FROM assets WHERE asset_class = 'ETF'")
-            cursor.execute("DELETE FROM score_results WHERE symbol LIKE 'AMEX:%'")
+            if conn.is_postgres:
+                cursor.execute("ALTER TABLE portfolio_positions ADD COLUMN IF NOT EXISTS target_weight_percent NUMERIC(5, 2) NOT NULL DEFAULT 10.0")
+                cursor.execute("ALTER TABLE portfolio_positions ADD COLUMN IF NOT EXISTS is_auto_managed BOOLEAN NOT NULL DEFAULT FALSE")
+                cursor.execute("ALTER TABLE portfolio_positions ADD COLUMN IF NOT EXISTS entry_timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW()")
+            else:
+                cursor.execute("PRAGMA table_info(portfolio_positions)")
+                cols = [c[1] for c in cursor.fetchall()]
+                if 'target_weight_percent' not in cols:
+                    cursor.execute("ALTER TABLE portfolio_positions ADD COLUMN target_weight_percent REAL NOT NULL DEFAULT 10.0")
+                if 'is_auto_managed' not in cols:
+                    cursor.execute("ALTER TABLE portfolio_positions ADD COLUMN is_auto_managed INTEGER NOT NULL DEFAULT 0")
+                if 'entry_timestamp' not in cols:
+                    cursor.execute("ALTER TABLE portfolio_positions ADD COLUMN entry_timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP")
+            conn.commit()
+        except Exception:
+            pass
+
+        # ETF ve Kriptolar temel analiz yapılamadığı için evrenden temizlenir
+        try:
+            cursor.execute("DELETE FROM assets WHERE asset_class IN ('ETF', 'CRYPTO')")
+            cursor.execute("DELETE FROM score_results WHERE symbol LIKE 'AMEX:%' OR symbol LIKE 'BINANCE:%'")
             conn.commit()
         except Exception:
             pass

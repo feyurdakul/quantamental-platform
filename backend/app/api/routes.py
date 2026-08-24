@@ -8,6 +8,7 @@ from typing import Optional, List, Dict, Any
 from app.models.asset import Asset, AssetClass
 from app.db.repositories import AssetRepository
 from app.scan.service import ScanOrchestrator
+from app.scan.scheduler import DailyScanScheduler
 
 import math
 
@@ -15,6 +16,8 @@ router = APIRouter(prefix="/v1")
 
 # Global orchestrator singleton
 orchestrator = ScanOrchestrator()
+# Global daily 01:30 TR scan scheduler singleton
+daily_scheduler = DailyScanScheduler(orchestrator)
 
 
 def sanitize_for_json(obj: Any) -> Any:
@@ -163,3 +166,28 @@ async def get_scan_status():
         "started_at": orchestrator.status.started_at,
         "completed_at": orchestrator.status.completed_at
     }
+
+
+@router.get("/scan/scheduler")
+async def get_scheduler_status():
+    """
+    Her Gece TR 01:30 Otomatik Tarama Zamanlayıcısı Durumu
+    """
+    return daily_scheduler.get_status()
+
+
+@router.post("/scan/scheduler/run-now")
+async def trigger_scheduler_now():
+    """
+    Zamanlayıcıyı beklemeden günlük taramayı manuel hemen tetikler
+    """
+    universe = AssetRepository.get_all()
+    orchestrator.start_scan(universe)
+    asyncio.create_task(orchestrator.run_background_scan(universe))
+    daily_scheduler.last_run_status = "TRIGGERED_MANUALLY"
+    return {
+        "message": "Günlük tarama manuel olarak hemen tetiklendi.",
+        "total_assets": len(universe),
+        "scheduler": daily_scheduler.get_status()
+    }
+
