@@ -6,6 +6,7 @@ import { Universe } from './pages/Universe';
 import { AssetDetail } from './pages/AssetDetail';
 import { Portfolio } from './pages/Portfolio';
 import { Settings } from './pages/Settings';
+import { UserGuide } from './pages/UserGuide';
 import { fetchScanStatus } from './api/client';
 
 export function App() {
@@ -76,6 +77,9 @@ export function App() {
           )}
           {activeTab === 'settings' && (
             <Settings onRefreshAll={loadStatus} />
+          )}
+          {activeTab === 'guide' && (
+            <UserGuide />
           )}
         </main>
       </div>

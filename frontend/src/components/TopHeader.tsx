@@ -27,6 +27,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ activeTab, scanStatus, onR
       case 'detail': return '360° VARLIK DETAY & DERİNLEMESİNE ANALİZ';
       case 'portfolio': return 'MODEL PORTFÖYÜ & RİSK DAĞILIMI';
       case 'settings': return 'SİSTEM YÖNETİMİ & TARAMA KONTROLÜ';
+      case 'guide': return 'KULLANIM KILAVUZU & SKORLAMA METODOLOJİSİ';
       default: return 'QUANTAMENTAL TERMINAL';
     }
   };

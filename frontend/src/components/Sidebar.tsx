@@ -7,7 +7,8 @@ import {
   Activity,
   Cpu,
   Database,
-  Radio
+  Radio,
+  BookOpen
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -29,6 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'detail', label: selectedAsset ? `Detay (${selectedAsset})` : 'Asset Detail', icon: Activity },
     { id: 'portfolio', label: 'Model Portföy', icon: PieChart },
     { id: 'settings', label: 'Ayarlar & Yönetim', icon: Settings },
+    { id: 'guide', label: 'Nasıl Kullanılır?', icon: BookOpen },
   ];
 
   const isScanning = scanStage === 'SCORING' || scanStage === 'FETCHING' || scanStage === 'INIT' || scanStage === 'BENCHMARKS';
