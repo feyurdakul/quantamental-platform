@@ -55,18 +55,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectAsset, onNavigateT
   let topPotential = leaderboards.top_potential || [];
   let mostRisky = leaderboards.most_risky_overvalued || [];
 
-  // Varlık sınıfı filtrelemesi
+  // Varlık sınıfı filtrelemesi (Yalnızca Hisseler)
   if (selectedClass !== 'ALL') {
     topPotential = topPotential.filter((item: any) => {
       if (selectedClass === 'BIST') return item.symbol.startsWith('BIST:');
       if (selectedClass === 'US') return item.symbol.startsWith('NASDAQ:') || item.symbol.startsWith('NYSE:');
-      if (selectedClass === 'FOREX') return item.symbol.startsWith('FX:') || item.symbol.startsWith('TVC:');
       return true;
     });
     mostRisky = mostRisky.filter((item: any) => {
       if (selectedClass === 'BIST') return item.symbol.startsWith('BIST:');
       if (selectedClass === 'US') return item.symbol.startsWith('NASDAQ:') || item.symbol.startsWith('NYSE:');
-      if (selectedClass === 'FOREX') return item.symbol.startsWith('FX:') || item.symbol.startsWith('TVC:');
       return true;
     });
   }
@@ -98,10 +96,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectAsset, onNavigateT
         
         <div className="bg-dark-800 border border-slate-800/80 p-4 rounded-md flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">Aktif Evren Büyüklüğü</p>
-            <h3 className="text-xl font-bold text-white mt-1 font-mono">{data?.total_assets || 668} Varlık</h3>
+            <p className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">Aktif Hisse Evreni</p>
+            <h3 className="text-xl font-bold text-white mt-1 font-mono">{data?.total_assets || 601} Hisse</h3>
             <p className="text-[10px] text-blue-400 mt-0.5 flex items-center gap-1 font-mono">
-              <Layers className="w-3 h-3" /> BIST 100, S&P 500, FX & Emtia
+              <Layers className="w-3 h-3" /> BIST 100 & ABD Equities
             </p>
           </div>
           <div className="w-9 h-9 rounded bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
@@ -114,7 +112,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectAsset, onNavigateT
             <p className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">Tarama Durumu</p>
             <h3 className="text-xl font-bold text-emerald-400 mt-1 font-mono">{data?.scan_stage || 'HAZIR'}</h3>
             <p className="text-[10px] text-emerald-400/80 mt-0.5 flex items-center gap-1 font-mono">
-              <CheckCircle2 className="w-3 h-3" /> {data?.processed_assets || data?.total_assets || 0} Varlık İşlendi
+              <CheckCircle2 className="w-3 h-3" /> {data?.processed_assets || data?.total_assets || 0} Hisse İşlendi
             </p>
           </div>
           <div className="w-9 h-9 rounded bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
@@ -153,10 +151,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectAsset, onNavigateT
       {/* Varlık Sınıfı Filtre Sekmeleri */}
       <div className="flex items-center gap-1 bg-dark-800/60 p-1 rounded-md border border-slate-800/80 overflow-x-auto">
         {[
-          { id: 'ALL', label: 'TÜM EVREN' },
+          { id: 'ALL', label: 'TÜM HİSSELER' },
           { id: 'BIST', label: '🇹🇷 BIST 100' },
-          { id: 'US', label: '🇺🇸 ABD EQUITIES' },
-          { id: 'FOREX', label: '💱 FX & EMTİA' }
+          { id: 'US', label: '🇺🇸 ABD EQUITIES' }
         ].map((tab) => (
           <button
             key={tab.id}

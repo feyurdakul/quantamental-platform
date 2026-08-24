@@ -42,16 +42,18 @@ class ScanOrchestrator:
         self._load_cached_scores_from_db()
 
     def _load_cached_scores_from_db(self):
-        """Kayıtlı skorları veritabanından hafızaya yükler"""
+        """Kayıtlı skorları veritabanından hafızaya yükler (Yalnızca Hisse Senetleri)"""
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM score_results")
+            cursor.execute("SELECT * FROM score_results WHERE symbol LIKE 'BIST:%' OR symbol LIKE 'NASDAQ:%' OR symbol LIKE 'NYSE:%'")
             rows = cursor.fetchall()
             conn.close()
 
             for r in rows:
                 sym = r["symbol"]
+                if not (sym.startswith("BIST:") or sym.startswith("NASDAQ:") or sym.startswith("NYSE:")):
+                    continue
                 cat_json = json.loads(r["category_scores_json"]) if r["category_scores_json"] else {}
                 self.status.results[sym] = {
                     "success": True,
@@ -273,6 +275,8 @@ class ScanOrchestrator:
         """
         scored_items = []
         for sym, data in self.status.results.items():
+            if not (sym.startswith("BIST:") or sym.startswith("NASDAQ:") or sym.startswith("NYSE:")):
+                continue
             sr: ScoreResult = data.get("score_result")
             if sr:
                 fr = sr.fundamental_rating or {}

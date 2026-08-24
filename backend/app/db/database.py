@@ -196,10 +196,11 @@ def init_db():
         except Exception:
             pass
 
-        # ETF ve Kriptolar temel analiz yapılamadığı için evrenden temizlenir
+        # Yalnızca Temel Analiz yapılabilen Hisse Senetleri (BIST, Banka, ABD) tutulur; ETF, Kripto, FX ve Emtia temizlenir
         try:
-            cursor.execute("DELETE FROM assets WHERE asset_class IN ('ETF', 'CRYPTO')")
-            cursor.execute("DELETE FROM score_results WHERE symbol LIKE 'AMEX:%' OR symbol LIKE 'BINANCE:%'")
+            cursor.execute("DELETE FROM assets WHERE asset_class NOT IN ('BIST_STOCK', 'BANK_STOCK', 'US_STOCK')")
+            cursor.execute("DELETE FROM score_results WHERE symbol LIKE 'AMEX:%' OR symbol LIKE 'BINANCE:%' OR symbol LIKE 'FX:%' OR symbol LIKE 'TVC:%' OR symbol LIKE 'INDEX:%'")
+            cursor.execute("DELETE FROM portfolio_positions WHERE symbol LIKE 'AMEX:%' OR symbol LIKE 'BINANCE:%' OR symbol LIKE 'FX:%' OR symbol LIKE 'TVC:%' OR symbol LIKE 'INDEX:%'")
             conn.commit()
         except Exception:
             pass

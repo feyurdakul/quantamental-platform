@@ -457,39 +457,7 @@ def build_711_universe() -> list[Asset]:
             requires_financials=True
         ))
 
-    # (ETFs and Cryptos excluded from fundamental analysis universe)
-
-    # 4. 💱 Döviz & Emtia (15 Varlık)
-    fx_commodities = [
-        ("FX:USDTRY", "Dolar / Türk Lirası", AssetClass.FOREX, "FX", "Forex", "TRY"),
-        ("FX:EURTRY", "Euro / Türk Lirası", AssetClass.FOREX, "FX", "Forex", "TRY"),
-        ("FX:EURUSD", "Euro / Dolar", AssetClass.FOREX, "FX", "Forex", "USD"),
-        ("FX:GBPUSD", "İngiliz Sterlini / Dolar", AssetClass.FOREX, "FX", "Forex", "USD"),
-        ("FX:USDJPY", "Dolar / Japon Yeni", AssetClass.FOREX, "FX", "Forex", "JPY"),
-        ("FX:USDCHF", "Dolar / İsviçre Frangı", AssetClass.FOREX, "FX", "Forex", "CHF"),
-        ("TVC:GOLD", "Ons Altın (XAU/USD)", AssetClass.COMMODITY, "TVC", "Precious Metals", "USD"),
-        ("TVC:SILVER", "Ons Gümüş (XAG/USD)", AssetClass.COMMODITY, "TVC", "Precious Metals", "USD"),
-        ("TVC:USOIL", "WTI Ham Petrol", AssetClass.COMMODITY, "TVC", "Energy Commodities", "USD"),
-        ("TVC:UKOIL", "Brent Petrol", AssetClass.COMMODITY, "TVC", "Energy Commodities", "USD"),
-        ("TVC:COPPER", "Bakır Vadeli", AssetClass.COMMODITY, "TVC", "Industrial Metals", "USD"),
-        ("TVC:NATGAS", "Doğal Gaz", AssetClass.COMMODITY, "TVC", "Energy Commodities", "USD"),
-        ("INDEX:XU100", "BIST 100 Endeksi", AssetClass.INDEX, "INDEX", "Index", "TRY"),
-        ("INDEX:SPX", "S&P 500 Endeksi", AssetClass.INDEX, "INDEX", "Index", "USD"),
-        ("INDEX:DJI", "Dow Jones Endeksi", AssetClass.INDEX, "INDEX", "Index", "USD"),
-        ("INDEX:NDX", "Nasdaq 100 Endeksi", AssetClass.INDEX, "INDEX", "Index", "USD")
-    ]
-
-    for sym, name, a_cls, exch, sec, curr in fx_commodities:
-        assets.append(Asset(
-            symbol=sym,
-            name=name,
-            asset_class=a_cls,
-            exchange=exch,
-            sector=sec,
-            currency=curr,
-            requires_financials=False
-        ))
-
+    # (ETFs, Cryptos, Forex, Commodities and Indices excluded from fundamental analysis universe)
     return assets
 
 
