@@ -144,9 +144,25 @@ class ScanOrchestrator:
             "duration_seconds": (self.status.completed_at - self.status.started_at).total_seconds() if self.status.started_at else 0
         }
 
+    def _process_single_asset_sync(self, asset: Asset) -> Dict[str, Any]:
+        """Tek bir varlığın veri çekme, skorlama ve kaydetme adımını güvenle işletir"""
+        try:
+            m_series = LiveMarketFetcher.fetch_market_series_fast(asset)
+            fin_snaps = LiveMarketFetcher.fetch_financial_snapshots_fast(asset) if asset.requires_financials else []
+            res = AssetScanPipeline.process_asset(
+                asset=asset,
+                market_series=m_series,
+                financial_snapshots=fin_snaps
+            )
+            if res.get("success"):
+                self._save_score_to_db(res)
+            return res
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
     async def run_background_scan(self, universe: List[Asset]):
         """
-        Arka planda asenkron dürüst tarama (Bölüm 10.5 Dürüst İlerleme İlkesi).
+        Arka planda asenkron ve kilitlenmeyen dürüst tarama (Bölüm 10.5 Dürüst İlerleme İlkesi).
         """
         if self._is_scanning:
             return
@@ -155,34 +171,38 @@ class ScanOrchestrator:
         try:
             self.start_scan(universe)
             self.status.stage = "FETCHING"
+            loop = asyncio.get_running_loop()
 
             for asset in universe:
-                # Veri Toplama
-                m_series = LiveMarketFetcher.fetch_market_series_fast(asset)
-                fin_snaps = LiveMarketFetcher.fetch_financial_snapshots_fast(asset) if asset.requires_financials else []
-
                 self.status.stage = "SCORING"
-                res = AssetScanPipeline.process_asset(
-                    asset=asset,
-                    market_series=m_series,
-                    financial_snapshots=fin_snaps
-                )
+                try:
+                    # Thread pool executor içinde senkron blocking çağrıları çalıştır (Event loop donmaz)
+                    res = await loop.run_in_executor(None, self._process_single_asset_sync, asset)
 
-                if res["success"]:
-                    self.status.results[asset.symbol] = res
-                    self.status.processed_assets += 1
-                    self._save_score_to_db(res)
-                else:
+                    if res.get("success"):
+                        self.status.results[asset.symbol] = res
+                        self.status.processed_assets += 1
+                    else:
+                        self.status.failed_assets += 1
+                        self.status.errors.append({
+                            "symbol": asset.symbol,
+                            "error": res.get("error", "Failed")
+                        })
+                except Exception as ex:
                     self.status.failed_assets += 1
+                    self.status.errors.append({"symbol": asset.symbol, "error": str(ex)})
 
-                # Event loop'u serbest bırakarak frontend'in progress okumasını sağla
-                await asyncio.sleep(0.01)
+                # Her varlık sonrası event loop'a nefes aldır (Frontend canlı progress okur)
+                await asyncio.sleep(0.02)
 
             self.status.stage = "BENCHMARKS"
             await asyncio.sleep(0.2)
             self.status.stage = "COMPLETED"
             self.status.completed_at = datetime.now(timezone.utc)
 
+        except Exception as global_ex:
+            print(f"Tarama genel hatası: {global_ex}")
+            self.status.stage = "FAILED"
         finally:
             self._is_scanning = False
 

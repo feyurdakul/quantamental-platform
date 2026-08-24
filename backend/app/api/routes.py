@@ -22,6 +22,10 @@ def _ensure_initial_scores():
         # İlk 15 majör varlık için hızlı ilk hesaplama yap
         sample_batch = universe[:25]
         orchestrator.process_universe_sync(sample_batch)
+        # Açılış sonrası durumu IDLE (Hazır) yap ki kullanıcı tarama başlatabilsin
+        orchestrator.status.stage = "IDLE"
+        orchestrator.status.total_assets = len(universe)
+
 
 
 _ensure_initial_scores()
@@ -104,11 +108,13 @@ async def get_asset_detail(symbol: str):
 
 
 @router.post("/scan/start")
-async def start_universe_scan(background_tasks: BackgroundTasks):
+async def start_universe_scan():
     """
     10.5 Tam Taramayı Arka Planda Başlatma (Non-blocking Asenkron)
     """
     universe = AssetRepository.get_all()
+    # Durumu hemen INIT / FETCHING olarak işaretle
+    orchestrator.start_scan(universe)
     # Arka plan görevi olarak çalıştır
     asyncio.create_task(orchestrator.run_background_scan(universe))
     
