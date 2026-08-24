@@ -408,6 +408,11 @@ class ScorerEngine:
         if liquidity.get("flags"):
             flags.extend(liquidity.get("flags"))
 
+        # 2. Skor Modeli: 6-Faktörlü Temel Derecelendirme (6-30 Puan / S, A, B, C, D)
+        is_fin = asset.asset_class in [AssetClass.BIST_STOCK, AssetClass.US_STOCK, AssetClass.BANK_STOCK]
+        from app.engine.rating_model import FundamentalRatingEngine
+        fund_rating = FundamentalRatingEngine.compute_rating(valuation, quality, liquidity, is_financial_asset=is_fin)
+
         return ScoreResult(
             symbol=asset.symbol,
             composite_score=final_score,
@@ -417,6 +422,7 @@ class ScorerEngine:
             category_scores=categories,
             altman_z_score=resilience.get("altman_z_score"),
             piotroski_f_score=resilience.get("piotroski_f_score", {}).get("score") if isinstance(resilience.get("piotroski_f_score"), dict) else None,
+            fundamental_rating=fund_rating.model_dump(),
             raw_score_before_hysteresis=raw_composite,
             hysteresis_applied=hysteresis_applied,
             formula_version="1.0.0",

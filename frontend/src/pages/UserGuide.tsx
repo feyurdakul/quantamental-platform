@@ -184,11 +184,137 @@ export const UserGuide: React.FC = () => {
 
       </div>
 
-      {/* 3. SİNYAL EŞİKLERİ TABLOSU */}
+      {/* 3. İKİNCİ MODEL: 6-FAKTÖRLÜ TEMEL DERECELENDİRME MODELİ (6-30 PUAN & S/A/B/C/D) */}
+      <div className="bg-dark-800 border border-purple-900/40 p-6 rounded-md space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-800/80">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-purple-400" />
+            <h3 className="font-bold text-sm font-mono uppercase tracking-wider text-slate-100">
+              2. Model: 6-Faktörlü Temel Derecelendirme Modeli (6 – 30 Puan & S, A, B, C, D)
+            </h3>
+          </div>
+          <span className="text-[10px] px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono font-bold">
+            YENİ FİNANSAL MODEL
+          </span>
+        </div>
+
+        <p className="text-xs text-slate-300 leading-relaxed font-sans">
+          Bu model, 6 kritik bilanço rasyosunu yönüne göre (yüksek olması iyi veya düşük olması iyi) 1 ile 5 puan arasında değerlendirir. 
+          Toplam puan (6–30) üzerinden harf notu ve profesyonel genel tavsiye üretir.
+        </p>
+
+        {/* 6 Metrik Eşik Tablosu */}
+        <div className="overflow-x-auto font-mono text-xs">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-slate-800 text-slate-500 text-[10px]">
+                <th className="pb-2">METRİK</th>
+                <th className="pb-2">YÖN</th>
+                <th className="pb-2 text-emerald-400">5 PUAN (Strong Buy)</th>
+                <th className="pb-2 text-teal-400">4 PUAN (Buy)</th>
+                <th className="pb-2 text-amber-400">3 PUAN (Neutral)</th>
+                <th className="pb-2 text-rose-400">2 PUAN (Sell)</th>
+                <th className="pb-2 text-rose-500">1 PUAN (Strong Sell)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/60 text-xs">
+              <tr>
+                <td className="py-2 font-bold text-white">DCF / FCF Marjı</td>
+                <td className="py-2 text-emerald-400">Yüksek İyi</td>
+                <td className="py-2 text-emerald-400">≥ %25</td>
+                <td className="py-2 text-teal-300">%10 – %25</td>
+                <td className="py-2 text-amber-300">%0 – %10</td>
+                <td className="py-2 text-rose-300">-%15 – %0</td>
+                <td className="py-2 text-rose-500">&lt; -%15</td>
+              </tr>
+              <tr>
+                <td className="py-2 font-bold text-white">ROE (Özkaynak Kârlılığı)</td>
+                <td className="py-2 text-emerald-400">Yüksek İyi</td>
+                <td className="py-2 text-emerald-400">≥ %20</td>
+                <td className="py-2 text-teal-300">%10 – %20</td>
+                <td className="py-2 text-amber-300">%5 – %10</td>
+                <td className="py-2 text-rose-300">%0 – %5</td>
+                <td className="py-2 text-rose-500">&lt; %0</td>
+              </tr>
+              <tr>
+                <td className="py-2 font-bold text-white">ROA (Aktif Kârlılığı)</td>
+                <td className="py-2 text-emerald-400">Yüksek İyi</td>
+                <td className="py-2 text-emerald-400">≥ %10</td>
+                <td className="py-2 text-teal-300">%5 – %10</td>
+                <td className="py-2 text-amber-300">%2 – %5</td>
+                <td className="py-2 text-rose-300">%0 – %2</td>
+                <td className="py-2 text-rose-500">&lt; %0</td>
+              </tr>
+              <tr>
+                <td className="py-2 font-bold text-white">Borç / Özkaynak (D/E)</td>
+                <td className="py-2 text-blue-400">Düşük İyi</td>
+                <td className="py-2 text-emerald-400">≤ 0.20x</td>
+                <td className="py-2 text-teal-300">0.20x – 0.50x</td>
+                <td className="py-2 text-amber-300">0.50x – 1.00x</td>
+                <td className="py-2 text-rose-300">1.00x – 2.00x</td>
+                <td className="py-2 text-rose-500">&gt; 2.00x</td>
+              </tr>
+              <tr>
+                <td className="py-2 font-bold text-white">F/K Oranı (P/E)</td>
+                <td className="py-2 text-blue-400">Düşük İyi</td>
+                <td className="py-2 text-emerald-400">≤ 15.0x</td>
+                <td className="py-2 text-teal-300">15.0x – 25.0x</td>
+                <td className="py-2 text-amber-300">25.0x – 40.0x</td>
+                <td className="py-2 text-rose-300">40.0x – 999x</td>
+                <td className="py-2 text-rose-500">&gt; 999x veya <span className="underline">Zarar (&lt;0)</span></td>
+              </tr>
+              <tr>
+                <td className="py-2 font-bold text-white">PD/DD Oranı (P/B)</td>
+                <td className="py-2 text-blue-400">Düşük İyi</td>
+                <td className="py-2 text-emerald-400">≤ 1.50x</td>
+                <td className="py-2 text-teal-300">1.50x – 3.00x</td>
+                <td className="py-2 text-amber-300">3.00x – 5.00x</td>
+                <td className="py-2 text-rose-300">5.00x – 10.0x</td>
+                <td className="py-2 text-rose-500">&gt; 10.0x</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Harf Notu ve Tavsiye Eşikleri */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-2 text-center font-mono">
+          <div className="bg-dark-900 p-2.5 rounded border border-emerald-500/30">
+            <span className="text-xl font-black text-emerald-400 block">S</span>
+            <span className="text-[10px] text-slate-400">25 – 30 Puan</span>
+            <span className="text-[10px] text-emerald-300 block font-bold mt-1">Strong Buy</span>
+          </div>
+          <div className="bg-dark-900 p-2.5 rounded border border-teal-500/30">
+            <span className="text-xl font-black text-teal-400 block">A</span>
+            <span className="text-[10px] text-slate-400">19 – 24 Puan</span>
+            <span className="text-[10px] text-teal-300 block font-bold mt-1">Buy</span>
+          </div>
+          <div className="bg-dark-900 p-2.5 rounded border border-amber-500/30">
+            <span className="text-xl font-black text-amber-300 block">B</span>
+            <span className="text-[10px] text-slate-400">13 – 18 Puan</span>
+            <span className="text-[10px] text-amber-300 block font-bold mt-1">Neutral</span>
+          </div>
+          <div className="bg-dark-900 p-2.5 rounded border border-rose-500/30">
+            <span className="text-xl font-black text-rose-300 block">C</span>
+            <span className="text-[10px] text-slate-400">9 – 12 Puan</span>
+            <span className="text-[10px] text-rose-300 block font-bold mt-1">Sell</span>
+          </div>
+          <div className="bg-dark-900 p-2.5 rounded border border-rose-700/40 col-span-2 sm:col-span-1">
+            <span className="text-xl font-black text-rose-500 block">D</span>
+            <span className="text-[10px] text-slate-400">6 – 8 Puan</span>
+            <span className="text-[10px] text-rose-400 block font-bold mt-1">Strong Sell</span>
+          </div>
+        </div>
+
+        <p className="text-[11px] text-slate-400 font-sans">
+          * <strong>Özel Kural (Zarar Eden Şirketler):</strong> Eğer şirket dönem zararı açıkladıysa ve F/K oranı negatifse (&lt; 0), hiçbir aralığa bakılmaksızın F/K puanı doğrudan <strong>1 Puan (Strong Sell)</strong> olarak atanır.
+        </p>
+      </div>
+
+      {/* 4. SİNYAL EŞİKLERİ TABLOSU */}
       <div className="bg-dark-800 border border-slate-800/80 p-5 rounded-md space-y-3 font-mono text-xs">
         <h3 className="font-bold text-xs uppercase tracking-wider text-slate-200 flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          Sinyal Karar Matrisi & Güven Aralıkları
+          1. Model (Quantamental) Sinyal Karar Matrisi & Güven Aralıkları
         </h3>
 
         <div className="overflow-x-auto">

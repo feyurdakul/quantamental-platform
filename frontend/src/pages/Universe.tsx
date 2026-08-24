@@ -147,6 +147,7 @@ export const Universe: React.FC<UniverseProps> = ({ onSelectAsset }) => {
                     <ArrowUpDown className="w-3 h-3" />
                   </div>
                 </th>
+                <th className="py-3 px-4 font-medium">TEMEL NOT</th>
                 <th className="py-3 px-4 font-medium">SİNYAL</th>
                 <th className="py-3 px-4 font-medium">GÜVEN</th>
                 <th className="py-3 px-4 font-medium text-right">AKSİYON</th>
@@ -155,13 +156,20 @@ export const Universe: React.FC<UniverseProps> = ({ onSelectAsset }) => {
             <tbody className="divide-y divide-slate-800/60 font-mono text-xs">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400">
+                  <td colSpan={8} className="py-12 text-center text-slate-400">
                     <RefreshCw className="w-5 h-5 text-blue-400 animate-spin mx-auto mb-2" />
                     <span>Evren verileri taranıyor...</span>
                   </td>
                 </tr>
               ) : filteredAssets.length > 0 ? (
-                filteredAssets.map((asset) => (
+                filteredAssets.map((asset) => {
+                  const ratingLetter = asset.fundamental_rating?.rating || (
+                    asset.composite_score >= 8.4 ? 'S' :
+                    asset.composite_score >= 7.2 ? 'A' :
+                    asset.composite_score >= 5.2 ? 'B' :
+                    asset.composite_score >= 3.6 ? 'C' : 'D'
+                  );
+                  return (
                   <tr
                     key={asset.symbol}
                     onClick={() => onSelectAsset(asset.symbol)}
@@ -192,6 +200,20 @@ export const Universe: React.FC<UniverseProps> = ({ onSelectAsset }) => {
                       )}
                     </td>
                     <td className="py-2.5 px-4">
+                      {asset.requires_financials !== false ? (
+                        <span className={`px-2 py-0.5 rounded text-[11px] font-black font-mono border ${
+                          ratingLetter === 'S' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
+                          ratingLetter === 'A' ? 'bg-teal-500/20 text-teal-300 border-teal-500/40' :
+                          ratingLetter === 'B' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
+                          ratingLetter === 'C' ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' : 'bg-rose-700/30 text-rose-400 border-rose-700/50'
+                        }`}>
+                          {ratingLetter}
+                        </span>
+                      ) : (
+                        <span className="text-slate-600 text-[10px]">NA</span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-4">
                       {getSignalBadge(asset.signal)}
                     </td>
                     <td className="py-2.5 px-4">
@@ -209,10 +231,11 @@ export const Universe: React.FC<UniverseProps> = ({ onSelectAsset }) => {
                       </button>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               ) : (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-500 font-mono">
+                  <td colSpan={8} className="py-12 text-center text-slate-500 font-mono">
                     Arama kriterine uygun varlık bulunamadı.
                   </td>
                 </tr>

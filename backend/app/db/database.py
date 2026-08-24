@@ -33,14 +33,16 @@ class DBConnectionWrapper:
 
 def get_db_connection():
     """Ortam değişkenine göre PostgreSQL veya SQLite bağlantısı döner (Hata durumunda SQLite fallback)"""
-    if DATABASE_URL and DATABASE_URL.startswith("postgres"):
+    db_url = os.getenv("DATABASE_URL")
+    if db_url and db_url.startswith("postgres"):
         try:
             import psycopg2
-            from urllib.parse import urlparse, urlunparse
-            # Prisma query parametrelerini (?pgbouncer=true vb.) psycopg2 için temizle
-            parsed = urlparse(DATABASE_URL)
+            from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+            # Prisma query parametrelerini temizle ve sslmode=require ekle
+            parsed = urlparse(db_url)
+            # Query parametrelerinden pgbouncer'ı kaldır
             clean_url = urlunparse((parsed.scheme, parsed.netloc, parsed.path, '', '', ''))
-            raw_conn = psycopg2.connect(clean_url)
+            raw_conn = psycopg2.connect(clean_url, sslmode="require")
             return DBConnectionWrapper(raw_conn, is_postgres=True)
         except Exception as e:
             print(f"PostgreSQL bağlantı hatası ({e}), yerel SQLite veritabanına geçiliyor...")

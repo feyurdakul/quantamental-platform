@@ -154,3 +154,33 @@ def test_scorer_engine_composite_and_signals():
     assert score_res.signal.value in ["STRONG_BUY", "BUY"]
     assert score_res.coverage >= 0.75
     assert len(score_res.category_scores) == 5
+    assert score_res.fundamental_rating is not None
+    assert score_res.fundamental_rating["rating"] in ["S", "A"]
+    assert score_res.fundamental_rating["total_score"] >= 19
+
+
+def test_fundamental_rating_engine_explicit():
+    """Kullanıcının 6-Faktörlü Temel Derecelendirme Motoru mantığı testi"""
+    from app.engine.rating_model import FundamentalRatingEngine
+    
+    # 1. En iyi senaryo (Strong Buy / S notu)
+    val_best = {"pe_ratio": 12.0, "pb_ratio": 1.2, "fcf_yield": 0.30}
+    qual_best = {"roe": 0.25, "roa": 0.12, "fcf_margin": 0.30}
+    liq_best = {"net_debt_to_equity": 0.15}
+    
+    r_best = FundamentalRatingEngine.compute_rating(val_best, qual_best, liq_best, is_financial_asset=True)
+    assert r_best.total_score == 30
+    assert r_best.rating == "S"
+    assert r_best.recommendation == "Strong Buy"
+    
+    # 2. Zarar eden şirket (F/K negatif özel kuralı)
+    val_loss = {"pe_ratio": -8.5, "pb_ratio": 12.0, "fcf_yield": -0.20}
+    qual_loss = {"roe": -0.05, "roa": -0.02, "fcf_margin": -0.20}
+    liq_loss = {"net_debt_to_equity": 3.5}
+    
+    r_loss = FundamentalRatingEngine.compute_rating(val_loss, qual_loss, liq_loss, is_financial_asset=True)
+    assert r_loss.total_score == 6
+    assert r_loss.rating == "D"
+    assert r_loss.recommendation == "Strong Sell"
+    assert r_loss.metric_breakdown["pe_ratio"]["points"] == 1
+

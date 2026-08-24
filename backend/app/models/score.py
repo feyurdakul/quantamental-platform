@@ -4,7 +4,7 @@ Kanonik Skor, Sinyal ve Güven Seviyesi Modelleri (sistem_mimari.md Bölüm 8)
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 
 
@@ -66,6 +66,7 @@ class ScoreResult(BaseModel):
     # Referans Dayanıklılık Modelleri (Ana skor ağırlığına açık sürüm olmadan katılmaz - Bölüm 7 & 8.4)
     altman_z_score: Optional[float] = Field(None, description="Altman Z-Score (5 bileşen)")
     piotroski_f_score: Optional[int] = Field(None, description="Piotroski F-Score (0-9 puan)")
+    fundamental_rating: Optional[Dict[str, Any]] = Field(None, description="2. Skor Modeli: 6-Faktör Temel Rating (S, A, B, C, D / 6-30 Puan)")
     
     # Histerezis ve Sürümleme
     raw_score_before_hysteresis: Optional[float] = Field(None, description="Histerezis öncesi ham skor")

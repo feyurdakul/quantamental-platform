@@ -198,37 +198,83 @@ export const AssetDetail: React.FC<AssetDetailProps> = ({ symbol, onBack }) => {
       </div>
 
       {/* 2. SKOR ÖZETİ VE FİYAT / TEKNİK GENEL BAKIŞ */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        {/* Skor Kartı */}
+        {/* 1. Model: 10'luk Kantitatif Bileşik Skor */}
         <div className="bg-dark-800 border border-slate-800/80 p-5 rounded-md flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">KANTİTATİF BİLEŞİK SKOR</span>
+              <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">1. KANTİTATİF BİLEŞİK SKOR</span>
               <span className="text-[10px] font-mono text-slate-500">v1.0.0</span>
             </div>
             
             <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-4xl font-black font-mono text-emerald-400">
+              <span className="text-3xl font-black font-mono text-emerald-400">
                 {sr?.composite_score ? sr.composite_score.toFixed(2) : '—'}
               </span>
-              <span className="text-sm font-mono text-slate-500">/ 10.00</span>
+              <span className="text-xs font-mono text-slate-500">/ 10.00</span>
             </div>
 
-            <div className="flex items-center gap-2 mt-3">
+            <div className="flex items-center gap-1.5 mt-2 flex-wrap">
               {getSignalBadge(sr?.signal)}
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-dark-900 text-slate-300 border border-slate-700">
-                GÜVEN: {typeof sr?.confidence_level === 'object' ? sr?.confidence_level?.value : (sr?.confidence_level || 'LOW')}
-              </span>
-              <span className="text-[10px] font-mono text-slate-400">
-                Kapsama: %{Math.round((sr?.coverage || 0.8) * 100)}
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-dark-900 text-slate-300 border border-slate-700">
+                {typeof sr?.confidence_level === 'object' ? sr?.confidence_level?.value : (sr?.confidence_level || 'LOW')}
               </span>
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-800 text-[10px] text-slate-500 font-mono flex items-center justify-between">
-            <span>Histerezis: {sr?.hysteresis_applied ? 'Devrede' : 'Kapalı'}</span>
-            <span>Doğrulama: Güncel</span>
+          <div className="mt-3 pt-2 border-t border-slate-800 text-[10px] text-slate-500 font-mono flex items-center justify-between">
+            <span>Kapsama: %{Math.round((sr?.coverage || 0.8) * 100)}</span>
+            <span>Histerezis: {sr?.hysteresis_applied ? 'Açık' : 'Kapalı'}</span>
+          </div>
+        </div>
+
+        {/* 2. Model: 6-Faktörlü Temel Derecelendirme (S, A, B, C, D / 6-30 Puan) */}
+        <div className="bg-dark-800 border border-slate-800/80 p-5 rounded-md flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">2. 6-FAKTÖR TEMEL NOT</span>
+              <span className="text-[10px] font-mono text-purple-400 font-bold">6-30 SKALA</span>
+            </div>
+
+            {isFinancialAsset && (sr?.fundamental_rating || detail?.fundamental_rating) ? (
+              <>
+                <div className="flex items-baseline gap-2 mt-2">
+                  <span className={`text-3xl font-black font-mono ${
+                    (sr?.fundamental_rating?.rating || 'B') === 'S' ? 'text-emerald-400' :
+                    (sr?.fundamental_rating?.rating || 'B') === 'A' ? 'text-teal-400' :
+                    (sr?.fundamental_rating?.rating || 'B') === 'B' ? 'text-amber-300' :
+                    (sr?.fundamental_rating?.rating || 'B') === 'C' ? 'text-rose-300' : 'text-rose-500'
+                  }`}>
+                    NOT: {sr?.fundamental_rating?.rating || 'B'}
+                  </span>
+                  <span className="text-xs font-mono text-slate-400">
+                    ({sr?.fundamental_rating?.total_score || 18} / 30 Puan)
+                  </span>
+                </div>
+
+                <div className="mt-2">
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono border ${
+                    (sr?.fundamental_rating?.rating || 'B') === 'S' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
+                    (sr?.fundamental_rating?.rating || 'B') === 'A' ? 'bg-teal-500/20 text-teal-300 border-teal-500/40' :
+                    (sr?.fundamental_rating?.rating || 'B') === 'B' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
+                    (sr?.fundamental_rating?.rating || 'B') === 'C' ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' : 'bg-rose-700/30 text-rose-400 border-rose-700/50'
+                  }`}>
+                    TAVSİYE: {sr?.fundamental_rating?.recommendation?.toUpperCase() || 'NEUTRAL'}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <div className="mt-3">
+                <span className="text-sm font-mono text-slate-500 font-bold">Uygulanamaz</span>
+                <p className="text-[10px] text-slate-500 mt-1">Şirket bilançosu bulunmamaktadır.</p>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-3 pt-2 border-t border-slate-800 text-[10px] text-slate-500 font-mono flex items-center justify-between">
+            <span>6 Metrik Ağırlıksız</span>
+            <span>Eşikler: 25/19/13/9</span>
           </div>
         </div>
 
@@ -238,30 +284,30 @@ export const AssetDetail: React.FC<AssetDetailProps> = ({ symbol, onBack }) => {
             <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">FİYAT & PİYASA VERİLERİ</span>
             
             <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-3xl font-black font-mono text-white">
+              <span className="text-2xl font-black font-mono text-white">
                 {tech?.current_price ? fmtNum(currencyMode === 'USD' && asset.currency === 'TRY' ? (tech.current_price / 34.0) : tech.current_price, ` ${displayCurr}`) : '—'}
               </span>
               {(tech?.daily_change !== undefined || tech?.change !== undefined) && (
-                <span className={`text-xs font-mono font-bold flex items-center ${(tech.daily_change || tech.change || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                  {(tech.daily_change || tech.change || 0) >= 0 ? '+' : ''}{fmtNum(tech.daily_change || tech.change, ` ${displayCurr}`)} ({fmtPct((tech.daily_change_pct || tech.change_percent || 0) / 100)})
+                <span className={`text-[11px] font-mono font-bold flex items-center ${(tech.daily_change || tech.change || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {(tech.daily_change || tech.change || 0) >= 0 ? '+' : ''}{fmtNum(tech.daily_change || tech.change, ` ${displayCurr}`)}
                 </span>
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-2 mt-3 text-[11px] font-mono">
-              <div className="bg-dark-900 p-2 rounded border border-slate-800">
-                <span className="text-slate-500 block text-[10px]">RSI (14)</span>
+            <div className="grid grid-cols-2 gap-1.5 mt-2 text-[10px] font-mono">
+              <div className="bg-dark-900 p-1.5 rounded border border-slate-800">
+                <span className="text-slate-500 block text-[9px]">RSI (14)</span>
                 <span className="font-bold text-emerald-400">{fmtNum(tech?.rsi14, '', 1)}</span>
               </div>
-              <div className="bg-dark-900 p-2 rounded border border-slate-800">
-                <span className="text-slate-500 block text-[10px]">Trend Rejimi</span>
-                <span className="font-bold text-white">{tech?.trend_regime || 'NEUTRAL'}</span>
+              <div className="bg-dark-900 p-1.5 rounded border border-slate-800">
+                <span className="text-slate-500 block text-[9px]">Trend Rejimi</span>
+                <span className="font-bold text-white text-[10px]">{tech?.trend_regime || 'NEUTRAL'}</span>
               </div>
             </div>
           </div>
 
           <div className="mt-3 text-[10px] font-mono text-slate-500 flex justify-between">
-            <span>Volatilite (Yıllık): {fmtPct(tech?.annualized_volatility)}</span>
+            <span>Volatilite: {fmtPct(tech?.annualized_volatility)}</span>
             <span>SMA50: {fmtNum(tech?.sma50)}</span>
           </div>
         </div>
@@ -269,41 +315,39 @@ export const AssetDetail: React.FC<AssetDetailProps> = ({ symbol, onBack }) => {
         {/* Momentum & Getiriler */}
         <div className="bg-dark-800 border border-slate-800/80 p-5 rounded-md flex flex-col justify-between">
           <div>
-            <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">MOMENTUM & GETİRİ PROFİLİ</span>
+            <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">MOMENTUM PROFİLİ</span>
             
-            <div className="grid grid-cols-4 gap-1.5 mt-3 text-center font-mono">
-              <div className="bg-dark-900 p-2 rounded border border-slate-800">
-                <span className="text-[9px] text-slate-500 block">1 AY</span>
-                <span className={`text-xs font-bold ${tech?.return_1m >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                  {fmtPct(tech?.return_1m)}
+            <div className="grid grid-cols-4 gap-1 mt-2 text-center font-mono">
+              <div className="bg-dark-900 p-1.5 rounded border border-slate-800">
+                <span className="text-[8px] text-slate-500 block">1A</span>
+                <span className={`text-[10px] font-bold ${tech?.return_1m >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {fmtPct(tech?.return_1m, 0)}
                 </span>
               </div>
-              <div className="bg-dark-900 p-2 rounded border border-slate-800">
-                <span className="text-[9px] text-slate-500 block">3 AY</span>
-                <span className={`text-xs font-bold ${tech?.return_3m >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                  {fmtPct(tech?.return_3m)}
+              <div className="bg-dark-900 p-1.5 rounded border border-slate-800">
+                <span className="text-[8px] text-slate-500 block">3A</span>
+                <span className={`text-[10px] font-bold ${tech?.return_3m >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {fmtPct(tech?.return_3m, 0)}
                 </span>
               </div>
-              <div className="bg-dark-900 p-2 rounded border border-slate-800">
-                <span className="text-[9px] text-slate-500 block">6 AY</span>
-                <span className={`text-xs font-bold ${tech?.return_6m >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                  {fmtPct(tech?.return_6m)}
+              <div className="bg-dark-900 p-1.5 rounded border border-slate-800">
+                <span className="text-[8px] text-slate-500 block">6A</span>
+                <span className={`text-[10px] font-bold ${tech?.return_6m >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {fmtPct(tech?.return_6m, 0)}
                 </span>
               </div>
-              <div className="bg-dark-900 p-2 rounded border border-slate-800">
-                <span className="text-[9px] text-slate-500 block">12 AY</span>
-                <span className={`text-xs font-bold ${tech?.return_12m >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                  {fmtPct(tech?.return_12m)}
+              <div className="bg-dark-900 p-1.5 rounded border border-slate-800">
+                <span className="text-[8px] text-slate-500 block">12A</span>
+                <span className={`text-[10px] font-bold ${tech?.return_12m >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {fmtPct(tech?.return_12m, 0)}
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="mt-3 text-[10px] font-mono text-slate-400 bg-dark-900 p-2 rounded border border-slate-800">
-            Trend Görseli: <strong className="text-white">
-              {tech?.trend_regime === 'POSITIVE' ? 'Pozitif (Fiyat > SMA200 & SMA50 > SMA200)' :
-               tech?.trend_regime === 'NEGATIVE' ? 'Negatif (Fiyat < SMA200 & SMA50 < SMA200)' : 'Nötr / Kararsız'}
-            </strong>
+          <div className="mt-3 text-[10px] font-mono text-slate-400 bg-dark-900 p-1.5 rounded border border-slate-800 truncate">
+            {tech?.trend_regime === 'POSITIVE' ? 'Pozitif (Fiyat > SMA200)' :
+             tech?.trend_regime === 'NEGATIVE' ? 'Negatif (Fiyat < SMA200)' : 'Nötr / Kararsız'}
           </div>
         </div>
 
