@@ -9,10 +9,28 @@ from app.models.asset import Asset, AssetClass
 from app.db.repositories import AssetRepository
 from app.scan.service import ScanOrchestrator
 
+import math
+
 router = APIRouter(prefix="/v1")
 
 # Global orchestrator singleton
 orchestrator = ScanOrchestrator()
+
+
+def sanitize_for_json(obj: Any) -> Any:
+    """Float NaN ve Infinity değerlerini JSON uyumlu None / null değerlerine dönüştürür"""
+    if isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+        return obj
+    elif isinstance(obj, dict):
+        return {k: sanitize_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_for_json(v) for v in obj]
+    elif hasattr(obj, "model_dump"):
+        return sanitize_for_json(obj.model_dump())
+    return obj
+
 
 
 def _ensure_initial_scores():
@@ -40,14 +58,14 @@ async def get_dashboard_summary():
     total_assets_count = len(AssetRepository.get_all())
     leaderboards = orchestrator._generate_leaderboards()
 
-    return {
+    return sanitize_for_json({
         "scan_stage": orchestrator.status.stage,
         "total_assets": total_assets_count,
         "processed_assets": orchestrator.status.processed_assets,
         "failed_assets": orchestrator.status.failed_assets,
         "leaderboards": leaderboards,
         "last_updated": orchestrator.status.completed_at
-    }
+    })
 
 
 @router.get("/universe")
@@ -65,6 +83,7 @@ async def get_universe(
     for a in assets:
         sc = orchestrator.status.results.get(a.symbol, {})
         sr = sc.get("score_result")
+        fr = sr.fundamental_rating if sr else None
         items.append({
             "symbol": a.symbol,
             "name": a.name,
@@ -74,10 +93,13 @@ async def get_universe(
             "composite_score": sr.composite_score if sr else None,
             "signal": sr.signal.value if sr else "HOLD",
             "confidence": sr.confidence_level.value if sr else "LOW",
-            "current_price": sc.get("technicals", {}).get("current_price")
+            "current_price": sc.get("technicals", {}).get("current_price"),
+            "rating_letter": fr.get("rating") if fr else None,
+            "rating_score": fr.get("total_score") if fr else None
         })
 
-    return {"count": len(items), "assets": items}
+    return sanitize_for_json({"count": len(items), "assets": items})
+
 
 
 @router.get("/asset/{symbol:path}")
@@ -101,10 +123,11 @@ async def get_asset_detail(symbol: str):
         if scan_data.get("success"):
             orchestrator.status.results[asset.symbol] = scan_data
 
-    return {
+    return sanitize_for_json({
         "asset": asset,
         "detail": scan_data or {}
-    }
+    })
+
 
 
 @router.post("/scan/start")
