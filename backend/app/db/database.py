@@ -1,0 +1,123 @@
+"""
+Veritabanı Bağlantı ve Tablo Yöneticisi (SQLite & Supabase PostgreSQL Hibrit Uyumlu)
+DATABASE_URL ortam değişkeni varsa Supabase PostgreSQL'e, yoksa yerel SQLite'a bağlanır.
+"""
+
+import os
+import sqlite3
+from typing import Optional, Any
+from pathlib import Path
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+DB_PATH = os.getenv("SQLITE_DB_PATH", str(Path(__file__).parent.parent.parent / "quantamental.db"))
+
+
+class DBConnectionWrapper:
+    """PostgreSQL ve SQLite bağlantılarını ortak arayüzle sarmalar"""
+    def __init__(self, raw_conn, is_postgres: bool = False):
+        self.raw_conn = raw_conn
+        self.is_postgres = is_postgres
+
+    def cursor(self):
+        if self.is_postgres:
+            import psycopg2.extras
+            return self.raw_conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        return self.raw_conn.cursor()
+
+    def commit(self):
+        self.raw_conn.commit()
+
+    def close(self):
+        self.raw_conn.close()
+
+
+def get_db_connection():
+    """Ortam değişkenine göre PostgreSQL veya SQLite bağlantısı döner"""
+    if DATABASE_URL and DATABASE_URL.startswith("postgres"):
+        import psycopg2
+        raw_conn = psycopg2.connect(DATABASE_URL)
+        return DBConnectionWrapper(raw_conn, is_postgres=True)
+    else:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        return DBConnectionWrapper(conn, is_postgres=False)
+
+
+def init_db():
+    """Tabloları veritabanında oluşturur"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        if conn.is_postgres:
+            # PostgreSQL DDL
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS assets (
+                symbol VARCHAR(50) PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                asset_class VARCHAR(50) NOT NULL,
+                exchange VARCHAR(50) NOT NULL,
+                sector VARCHAR(100),
+                industry VARCHAR(100),
+                currency VARCHAR(10) NOT NULL DEFAULT 'TRY',
+                is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                requires_financials BOOLEAN NOT NULL DEFAULT TRUE,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            );
+
+            CREATE TABLE IF NOT EXISTS score_results (
+                symbol VARCHAR(50) PRIMARY KEY REFERENCES assets(symbol) ON DELETE CASCADE,
+                composite_score NUMERIC(5, 2) NOT NULL,
+                confidence_level VARCHAR(20) NOT NULL,
+                signal VARCHAR(30) NOT NULL,
+                coverage NUMERIC(5, 4) NOT NULL,
+                category_scores_json JSONB NOT NULL,
+                altman_z_score NUMERIC(8, 4),
+                piotroski_f_score INTEGER,
+                formula_version VARCHAR(20) NOT NULL DEFAULT '1.0.0',
+                flags_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+                as_of_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            );
+            """)
+        else:
+            # SQLite DDL
+            cursor.executescript("""
+            CREATE TABLE IF NOT EXISTS assets (
+                symbol TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                asset_class TEXT NOT NULL,
+                exchange TEXT NOT NULL,
+                sector TEXT,
+                industry TEXT,
+                currency TEXT NOT NULL DEFAULT 'TRY',
+                is_active INTEGER NOT NULL DEFAULT 1,
+                requires_financials INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS score_results (
+                symbol TEXT PRIMARY KEY,
+                composite_score REAL NOT NULL,
+                confidence_level TEXT NOT NULL,
+                signal TEXT NOT NULL,
+                coverage REAL NOT NULL,
+                category_scores_json TEXT NOT NULL,
+                altman_z_score REAL,
+                piotroski_f_score INTEGER,
+                formula_version TEXT NOT NULL DEFAULT '1.0.0',
+                flags_json TEXT NOT NULL DEFAULT '[]',
+                as_of_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (symbol) REFERENCES assets(symbol) ON DELETE CASCADE
+            );
+            """)
+
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"init_db uyarısı: {e}")
+
+
+# Uygulama başlatıldığında tabloları hazırla
+init_db()

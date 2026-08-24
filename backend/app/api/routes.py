@@ -1,0 +1,136 @@
+"""
+FastAPI REST API Uç Noktaları (sistem_mimari.md Bölüm 10 UI Sayfaları için)
+"""
+
+import asyncio
+from fastapi import APIRouter, HTTPException, Query, BackgroundTasks
+from typing import Optional, List, Dict, Any
+from app.models.asset import Asset, AssetClass
+from app.db.repositories import AssetRepository
+from app.scan.service import ScanOrchestrator
+
+router = APIRouter(prefix="/v1")
+
+# Global orchestrator singleton
+orchestrator = ScanOrchestrator()
+
+
+def _ensure_initial_scores():
+    """İlk açılışta dashboard liderlik tablolarının dolu gelmesini garanti eder"""
+    if not orchestrator.status.results:
+        universe = AssetRepository.get_all()
+        # İlk 15 majör varlık için hızlı ilk hesaplama yap
+        sample_batch = universe[:25]
+        orchestrator.process_universe_sync(sample_batch)
+
+
+_ensure_initial_scores()
+
+
+@router.get("/dashboard/summary")
+async def get_dashboard_summary():
+    """
+    10.1 Terminal Özeti / Dashboard:
+    Aktif tarama durumu, toplam varlık, liderlik listeleri, veri tazeliği.
+    """
+    total_assets_count = len(AssetRepository.get_all())
+    leaderboards = orchestrator._generate_leaderboards()
+
+    return {
+        "scan_stage": orchestrator.status.stage,
+        "total_assets": total_assets_count,
+        "processed_assets": orchestrator.status.processed_assets,
+        "failed_assets": orchestrator.status.failed_assets,
+        "leaderboards": leaderboards,
+        "last_updated": orchestrator.status.completed_at
+    }
+
+
+@router.get("/universe")
+async def get_universe(
+    asset_class: Optional[str] = Query(None, description="Varlık sınıfı filtresi"),
+    exchange: Optional[str] = Query(None, description="Borsa filtresi")
+):
+    """
+    10.2 Varlık Evreni Listesi:
+    Filtrelenebilir ve sıralanabilir tablo.
+    """
+    assets = AssetRepository.get_all(asset_class=asset_class, exchange=exchange)
+
+    items = []
+    for a in assets:
+        sc = orchestrator.status.results.get(a.symbol, {})
+        sr = sc.get("score_result")
+        items.append({
+            "symbol": a.symbol,
+            "name": a.name,
+            "asset_class": a.asset_class.value,
+            "exchange": a.exchange,
+            "sector": a.sector,
+            "composite_score": sr.composite_score if sr else None,
+            "signal": sr.signal.value if sr else "HOLD",
+            "confidence": sr.confidence_level.value if sr else "LOW",
+            "current_price": sc.get("technicals", {}).get("current_price")
+        })
+
+    return {"count": len(items), "assets": items}
+
+
+@router.get("/asset/{symbol:path}")
+async def get_asset_detail(symbol: str):
+    """
+    10.3 360° Asset Detail:
+    Puan detayı, kategori açılımları, finansallar, Altman Z / Piotroski F, kaynak izlenebilirliği.
+    """
+    asset = AssetRepository.get_by_symbol(symbol)
+    if not asset:
+        raise HTTPException(status_code=404, detail=f"'{symbol}' varlığı evrende bulunamadı")
+
+    scan_data = orchestrator.status.results.get(asset.symbol)
+    if not scan_data:
+        # Eğer bu varlık henüz taranmamışsa, anında hesapla
+        from app.scan.pipeline import AssetScanPipeline
+        from app.scan.market_fetcher import LiveMarketFetcher
+        m_series = LiveMarketFetcher.fetch_market_series_fast(asset)
+        fin_snaps = LiveMarketFetcher.fetch_financial_snapshots_fast(asset)
+        scan_data = AssetScanPipeline.process_asset(asset, m_series, fin_snaps)
+        if scan_data.get("success"):
+            orchestrator.status.results[asset.symbol] = scan_data
+
+    return {
+        "asset": asset,
+        "detail": scan_data or {}
+    }
+
+
+@router.post("/scan/start")
+async def start_universe_scan(background_tasks: BackgroundTasks):
+    """
+    10.5 Tam Taramayı Arka Planda Başlatma (Non-blocking Asenkron)
+    """
+    universe = AssetRepository.get_all()
+    # Arka plan görevi olarak çalıştır
+    asyncio.create_task(orchestrator.run_background_scan(universe))
+    
+    return {
+        "message": "Evren taraması arka planda başarıyla başlatıldı.",
+        "run_id": orchestrator.status.current_run_id,
+        "total_assets": len(universe),
+        "stage": "INIT"
+    }
+
+
+@router.get("/scan/status")
+async def get_scan_status():
+    """
+    10.5 Gerçek Zamanlı Aşama ve Dürüst İlerleme Takibi
+    """
+    return {
+        "run_id": orchestrator.status.current_run_id,
+        "stage": orchestrator.status.stage,
+        "total": orchestrator.status.total_assets,
+        "processed": orchestrator.status.processed_assets,
+        "failed": orchestrator.status.failed_assets,
+        "started_at": orchestrator.status.started_at,
+        "completed_at": orchestrator.status.completed_at
+    }

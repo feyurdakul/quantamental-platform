@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: quantamental-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - TV_GATEWAY_URL=http://tradingview-gateway:3001
+      - GF_BASE_URL=http://google-finance-api:8080
+      - SQLITE_DB_PATH=/app/quantamental.db
+    volumes:
+      - backend_data:/app
+    depends_on:
+      - tradingview-gateway
+
+  tradingview-gateway:
+    build: ./tradingview-gateway
+    container_name: quantamental-tv-gateway
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+
+  frontend:
+    build: ./frontend
+    container_name: quantamental-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  backend_data:
