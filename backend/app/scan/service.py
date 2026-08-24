@@ -273,15 +273,19 @@ class ScanOrchestrator:
         Dashboard için En Güçlü Potansiyel ve En Riskli/Aşırı Değerli listelerini üretir (10'luk Ölçek).
         (sistem_mimari.md Bölüm 10.1)
         """
+        from app.db.repositories import AssetRepository
         scored_items = []
         for sym, data in self.status.results.items():
             if not (sym.startswith("BIST:") or sym.startswith("NASDAQ:") or sym.startswith("NYSE:")):
                 continue
             sr: ScoreResult = data.get("score_result")
             if sr:
+                asset_obj = AssetRepository.get_by_symbol(sym)
                 fr = sr.fundamental_rating or {}
                 scored_items.append({
                     "symbol": sym,
+                    "name": asset_obj.name if asset_obj else sym,
+                    "sector": asset_obj.sector if asset_obj else "Genel",
                     "composite_score": sr.composite_score,
                     "signal": sr.signal.value,
                     "confidence": sr.confidence_level.value,

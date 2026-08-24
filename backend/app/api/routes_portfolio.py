@@ -87,12 +87,13 @@ def compute_portfolio_summary() -> PortfolioSummary:
     pos_objs = []
     for p in db_positions:
         sym = p["symbol"]
+        asset = AssetRepository.get_by_symbol(sym)
+
         # Canlı fiyat ve skor bilgisi
         sc = orchestrator.status.results.get(sym)
         if not sc or not sc.get("technicals", {}).get("current_price"):
             # Canlı fiyat hafızada yoksa, hızlı piyasa verisi çek
             try:
-                asset = AssetRepository.get_by_symbol(sym)
                 if asset:
                     from app.scan.market_fetcher import LiveMarketFetcher
                     from app.scan.pipeline import AssetScanPipeline
@@ -113,11 +114,11 @@ def compute_portfolio_summary() -> PortfolioSummary:
 
         pos = PortfolioPosition(
             symbol=sym,
-            name=p["name"],
+            name=asset.name if asset and asset.name else p["name"],
             entry_price=p["entry_price"],
             current_price=cur_price,
             quantity=p["quantity"],
-            sector=p.get("sector") or "Genel",
+            sector=asset.sector if asset and asset.sector else (p.get("sector") or "Genel"),
             signal=sig,
             composite_score=comp_score
         )
@@ -185,6 +186,15 @@ def compute_portfolio_summary() -> PortfolioSummary:
 @portfolio_router.get("")
 async def get_portfolio() -> PortfolioSummary:
     """Model portföy özetini ve ağırlıklı pozisyonlarını veritabanından kalıcı getirir"""
+    try:
+        leaderboards = orchestrator._generate_leaderboards()
+        top_potential = leaderboards.get("top_potential", [])
+        most_risky = leaderboards.get("most_risky_overvalued", [])
+        if top_potential or most_risky:
+            PortfolioRepository.sync_auto_signals(top_potential, most_risky)
+    except Exception as e:
+        print(f"Otomatik sinyal senkronizasyon uyarısı: {e}")
+
     return compute_portfolio_summary()
 
 
@@ -233,7 +243,7 @@ async def trigger_auto_sync():
     """
     leaderboards = orchestrator._generate_leaderboards()
     top_potential = leaderboards.get("top_potential", [])
-    most_risky = leaderboards.get("most_risky", [])
+    most_risky = leaderboards.get("most_risky_overvalued", [])
     result = PortfolioRepository.sync_auto_signals(top_potential, most_risky)
     return {
         "message": "Otomatik portföy senkronizasyonu tamamlandı",

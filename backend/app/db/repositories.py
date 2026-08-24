@@ -187,6 +187,8 @@ class PortfolioRepository:
         cursor = conn.cursor()
         try:
             if conn.is_postgres:
+                cursor.execute("CREATE TABLE IF NOT EXISTS portfolio_dismissed (symbol VARCHAR(50) PRIMARY KEY, dismissed_at TIMESTAMPTZ DEFAULT NOW())")
+                cursor.execute("DELETE FROM portfolio_dismissed WHERE UPPER(symbol) = UPPER(%s)", (symbol,))
                 cursor.execute("""
                 INSERT INTO portfolio_positions (symbol, name, entry_price, quantity, target_weight_percent, sector, is_auto_managed, entry_timestamp, updated_at)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
@@ -205,6 +207,8 @@ class PortfolioRepository:
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 """, (symbol, name, "AUTO_BUY" if is_auto_managed else "BUY", entry_price, quantity, entry_price * quantity, 0.0, "Model Portföye Alım"))
             else:
+                cursor.execute("CREATE TABLE IF NOT EXISTS portfolio_dismissed (symbol TEXT PRIMARY KEY, dismissed_at TEXT DEFAULT CURRENT_TIMESTAMP)")
+                cursor.execute("DELETE FROM portfolio_dismissed WHERE UPPER(symbol) = UPPER(?)", (symbol,))
                 cursor.execute("""
                 INSERT OR REPLACE INTO portfolio_positions (symbol, name, entry_price, quantity, target_weight_percent, sector, is_auto_managed, entry_timestamp, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -282,6 +286,13 @@ class PortfolioRepository:
         cursor = conn.cursor()
         ph = "%s" if conn.is_postgres else "?"
         try:
+            if conn.is_postgres:
+                cursor.execute("CREATE TABLE IF NOT EXISTS portfolio_dismissed (symbol VARCHAR(50) PRIMARY KEY, dismissed_at TIMESTAMPTZ DEFAULT NOW())")
+                cursor.execute("INSERT INTO portfolio_dismissed (symbol) VALUES (%s) ON CONFLICT (symbol) DO NOTHING", (symbol,))
+            else:
+                cursor.execute("CREATE TABLE IF NOT EXISTS portfolio_dismissed (symbol TEXT PRIMARY KEY, dismissed_at TEXT DEFAULT CURRENT_TIMESTAMP)")
+                cursor.execute("INSERT OR IGNORE INTO portfolio_dismissed (symbol) VALUES (?)", (symbol,))
+
             cursor.execute(f"DELETE FROM portfolio_positions WHERE UPPER(symbol) = UPPER({ph})", (symbol,))
             conn.commit()
             return True
@@ -317,13 +328,26 @@ class PortfolioRepository:
     @staticmethod
     def sync_auto_signals(top_potential: List[Dict[str, Any]], most_risky: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
-        Tarama Sonu Otomatik Portföy Yönetimi:
+        Tarama Sonu & Dinamik Otomatik Portföy Yönetimi:
         1. En Riskli/Sat listesine düşen portföy hisselerini otomatik satar.
         2. En Güçlü Potansiyel tablosundaki ilk 10 hisseyi Strong Buy (%10) veya Buy (%7) olarak portföye ekler.
         """
+        from app.db.repositories import AssetRepository
         current_positions = {p["symbol"].upper(): p for p in PortfolioRepository.get_all()}
         auto_sold = []
         auto_bought = []
+
+        # Kullanıcının manuel sildiği varlıkları öğren (tekrar otomatik dirilmesin)
+        dismissed_symbols = set()
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT symbol FROM portfolio_dismissed")
+            for r in cur.fetchall():
+                dismissed_symbols.add(r["symbol"].upper())
+            conn.close()
+        except Exception:
+            pass
 
         # 1. Otomatik Satış: En Riskli Listesinde olan mevcut portföy hisseleri
         risky_symbols = {r["symbol"].upper(): r for r in most_risky if r.get("signal") in ["SELL", "STRONG_SELL"]}
@@ -339,11 +363,26 @@ class PortfolioRepository:
         
         for item in top_potential[:10]:
             sym = item.get("symbol")
-            if not sym or sym.upper() in current_positions_after_sell:
+            if not sym or sym.upper() in current_positions_after_sell or sym.upper() in dismissed_symbols:
                 continue
 
             sig = item.get("signal", "BUY")
-            cur_price = item.get("current_price") or 100.0
+            asset = AssetRepository.get_by_symbol(sym)
+            name = asset.name if asset else (item.get("name") or sym)
+            sector = asset.sector if asset else (item.get("sector") or "Genel")
+
+            cur_price = item.get("current_price")
+            if not cur_price or cur_price <= 0.0 or str(cur_price) == 'nan':
+                if asset:
+                    try:
+                        from app.scan.market_fetcher import LiveMarketFetcher
+                        m_s = LiveMarketFetcher.fetch_market_series_fast(asset)
+                        if m_s and m_s.points:
+                            cur_price = m_s.points[-1].close
+                    except Exception:
+                        pass
+
+            cur_price = float(cur_price) if (cur_price and str(cur_price) != 'nan' and cur_price > 0.0) else 100.0
             
             # Ağırlık Kuralları: Strong Buy %10, Buy %7
             target_weight = 10.0 if sig == "STRONG_BUY" else 7.0
@@ -351,11 +390,11 @@ class PortfolioRepository:
             
             PortfolioRepository.save_position(
                 symbol=sym,
-                name=item.get("name") or sym,
+                name=name,
                 entry_price=cur_price,
                 quantity=qty,
                 target_weight_percent=target_weight,
-                sector=item.get("sector") or "Genel",
+                sector=sector,
                 is_auto_managed=True
             )
             auto_bought.append(sym)
