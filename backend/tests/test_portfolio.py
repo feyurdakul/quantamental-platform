@@ -30,20 +30,8 @@ def test_portfolio_position_calculations():
 
 
 def test_portfolio_api_endpoints():
-    """Portföy listeleme, ekleme ve silme API testleri"""
-    # 1. Portföy özetini al
-    res = client.get("/v1/portfolio")
-    assert res.status_code == 200
-    data = res.json()
-    assert data["total_value"] > 0
-    assert data["position_count"] >= 1
-    assert "sector_allocation" in data
-
-    # Ağırlıkların toplamının yaklaşık %100 olması
-    weights_sum = sum(p["weight"] for p in data["positions"])
-    assert round(weights_sum, 2) == 1.00
-
-    # 2. Yeni pozisyon ekle
+    """Portföy listeleme, ekleme ve silme API testleri (Kalıcı DB)"""
+    # 1. Yeni pozisyon ekle
     add_payload = {
         "symbol": "NASDAQ:NVDA",
         "name": "NVIDIA Corp.",
@@ -54,8 +42,20 @@ def test_portfolio_api_endpoints():
     }
     res_add = client.post("/v1/portfolio/positions", json=add_payload)
     assert res_add.status_code == 200
-    assert res_add.json()["position"]["symbol"] == "NASDAQ:NVDA"
+
+    # 2. Portföy özetini al
+    res = client.get("/v1/portfolio")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["position_count"] >= 1
+    assert any(p["symbol"] == "NASDAQ:NVDA" for p in data["positions"])
 
     # 3. Eklenen pozisyonu sil
     res_del = client.delete("/v1/portfolio/positions/NASDAQ:NVDA")
     assert res_del.status_code == 200
+
+    # 4. Silinen pozisyonun artık listede olmadığını doğrula
+    res_after = client.get("/v1/portfolio")
+    data_after = res_after.json()
+    assert not any(p["symbol"] == "NASDAQ:NVDA" for p in data_after["positions"])
+

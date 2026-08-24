@@ -129,3 +129,69 @@ class AssetRepository:
 
         conn.commit()
         conn.close()
+
+
+class PortfolioRepository:
+    """Model Portföy kalıcı veritabanı CRUD katmanı (Supabase & SQLite)"""
+
+    @staticmethod
+    def get_all() -> List[Dict[str, Any]]:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT symbol, name, entry_price, quantity, sector FROM portfolio_positions ORDER BY created_at ASC")
+            rows = cursor.fetchall()
+            positions = []
+            for r in rows:
+                positions.append({
+                    "symbol": r["symbol"],
+                    "name": r["name"],
+                    "entry_price": float(r["entry_price"]),
+                    "quantity": float(r["quantity"]),
+                    "sector": r["sector"]
+                })
+            return positions
+        except Exception:
+            return []
+        finally:
+            conn.close()
+
+    @staticmethod
+    def save_position(symbol: str, name: str, entry_price: float, quantity: float = 100.0, sector: Optional[str] = None):
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            if conn.is_postgres:
+                cursor.execute("""
+                INSERT INTO portfolio_positions (symbol, name, entry_price, quantity, sector, updated_at)
+                VALUES (%s, %s, %s, %s, %s, NOW())
+                ON CONFLICT (symbol) DO UPDATE SET
+                    name = EXCLUDED.name,
+                    entry_price = EXCLUDED.entry_price,
+                    quantity = EXCLUDED.quantity,
+                    sector = EXCLUDED.sector,
+                    updated_at = NOW()
+                """, (symbol, name, entry_price, quantity, sector))
+            else:
+                cursor.execute("""
+                INSERT OR REPLACE INTO portfolio_positions (symbol, name, entry_price, quantity, sector, updated_at)
+                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                """, (symbol, name, entry_price, quantity, sector))
+            conn.commit()
+        finally:
+            conn.close()
+
+    @staticmethod
+    def delete_position(symbol: str) -> bool:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        ph = "%s" if conn.is_postgres else "?"
+        try:
+            cursor.execute(f"DELETE FROM portfolio_positions WHERE UPPER(symbol) = UPPER({ph})", (symbol,))
+            conn.commit()
+            return True
+        except Exception:
+            return False
+        finally:
+            conn.close()
+

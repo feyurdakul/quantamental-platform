@@ -91,6 +91,16 @@ def init_db():
                 flags_json JSONB NOT NULL DEFAULT '[]'::jsonb,
                 as_of_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             );
+
+            CREATE TABLE IF NOT EXISTS portfolio_positions (
+                symbol VARCHAR(50) PRIMARY KEY,
+                name VARCHAR(200) NOT NULL,
+                entry_price NUMERIC(15, 4) NOT NULL,
+                quantity NUMERIC(15, 4) NOT NULL DEFAULT 100,
+                sector VARCHAR(100),
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            );
             """)
         else:
             # SQLite DDL
@@ -122,6 +132,16 @@ def init_db():
                 flags_json TEXT NOT NULL DEFAULT '[]',
                 as_of_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (symbol) REFERENCES assets(symbol) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS portfolio_positions (
+                symbol TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                entry_price REAL NOT NULL,
+                quantity REAL NOT NULL DEFAULT 100,
+                sector TEXT,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             );
             """)
 
