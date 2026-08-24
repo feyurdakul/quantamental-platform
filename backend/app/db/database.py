@@ -32,11 +32,17 @@ class DBConnectionWrapper:
 
 
 def get_db_connection():
-    """Ortam değişkenine göre PostgreSQL veya SQLite bağlantısı döner"""
+    """Ortam değişkenine göre PostgreSQL veya SQLite bağlantısı döner (Hata durumunda SQLite fallback)"""
     if DATABASE_URL and DATABASE_URL.startswith("postgres"):
-        import psycopg2
-        raw_conn = psycopg2.connect(DATABASE_URL)
-        return DBConnectionWrapper(raw_conn, is_postgres=True)
+        try:
+            import psycopg2
+            raw_conn = psycopg2.connect(DATABASE_URL)
+            return DBConnectionWrapper(raw_conn, is_postgres=True)
+        except Exception as e:
+            print(f"PostgreSQL bağlantı hatası ({e}), yerel SQLite veritabanına geçiliyor...")
+            conn = sqlite3.connect(DB_PATH)
+            conn.row_factory = sqlite3.Row
+            return DBConnectionWrapper(conn, is_postgres=False)
     else:
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
