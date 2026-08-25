@@ -14,11 +14,36 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 DB_PATH = os.getenv("SQLITE_DB_PATH", str(Path(__file__).parent.parent.parent / "quantamental.db"))
 
 
+_pg_pool = None
+
+def _get_pg_pool():
+    global _pg_pool
+    if _pg_pool is None:
+        try:
+            import psycopg2.pool
+            from urllib.parse import urlparse, urlunparse
+            db_url = os.getenv("DATABASE_URL")
+            if db_url and db_url.startswith("postgres"):
+                parsed = urlparse(db_url)
+                clean_url = urlunparse((parsed.scheme, parsed.netloc, parsed.path, '', '', ''))
+                _pg_pool = psycopg2.pool.ThreadedConnectionPool(
+                    minconn=1,
+                    maxconn=20,
+                    dsn=clean_url,
+                    sslmode="require"
+                )
+        except Exception as e:
+            print(f"PostgreSQL connection pool initialization error: {e}")
+            _pg_pool = None
+    return _pg_pool
+
+
 class DBConnectionWrapper:
     """PostgreSQL ve SQLite bağlantılarını ortak arayüzle sarmalar"""
-    def __init__(self, raw_conn, is_postgres: bool = False):
+    def __init__(self, raw_conn, is_postgres: bool = False, pool=None):
         self.raw_conn = raw_conn
         self.is_postgres = is_postgres
+        self.pool = pool
 
     def cursor(self):
         if self.is_postgres:
@@ -30,24 +55,34 @@ class DBConnectionWrapper:
         self.raw_conn.commit()
 
     def close(self):
-        self.raw_conn.close()
+        if self.is_postgres and self.pool:
+            try:
+                self.pool.putconn(self.raw_conn)
+            except Exception:
+                self.raw_conn.close()
+        else:
+            self.raw_conn.close()
 
 
 def get_db_connection():
-    """Ortam değişkenine göre PostgreSQL veya SQLite bağlantısı döner (Hata durumunda SQLite fallback)"""
+    """Ortam değişkenine göre havuzlanmış PostgreSQL veya SQLite bağlantısı döner"""
     db_url = os.getenv("DATABASE_URL")
     if db_url and db_url.startswith("postgres"):
+        pool = _get_pg_pool()
+        if pool:
+            try:
+                raw_conn = pool.getconn()
+                return DBConnectionWrapper(raw_conn, is_postgres=True, pool=pool)
+            except Exception as e:
+                print(f"Error getting connection from pool ({e}), falling back to SQLite...")
         try:
             import psycopg2
-            from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
-            # Prisma query parametrelerini temizle ve sslmode=require ekle
+            from urllib.parse import urlparse, urlunparse
             parsed = urlparse(db_url)
-            # Query parametrelerinden pgbouncer'ı kaldır
             clean_url = urlunparse((parsed.scheme, parsed.netloc, parsed.path, '', '', ''))
             raw_conn = psycopg2.connect(clean_url, sslmode="require")
             return DBConnectionWrapper(raw_conn, is_postgres=True)
         except Exception as e:
-            print(f"PostgreSQL bağlantı hatası ({e}), yerel SQLite veritabanına geçiliyor...")
             conn = sqlite3.connect(DB_PATH)
             conn.row_factory = sqlite3.Row
             return DBConnectionWrapper(conn, is_postgres=False)
@@ -55,6 +90,7 @@ def get_db_connection():
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         return DBConnectionWrapper(conn, is_postgres=False)
+
 
 
 def init_db():

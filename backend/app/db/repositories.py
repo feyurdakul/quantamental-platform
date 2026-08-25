@@ -10,49 +10,45 @@ from app.models.asset import Asset, AssetClass
 
 class AssetRepository:
     """Varlık tablosu erişim katmanı"""
+    _cached_universe: Optional[List[Asset]] = None
 
-    @staticmethod
-    def get_all(asset_class: Optional[str] = None, exchange: Optional[str] = None) -> List[Asset]:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+    @classmethod
+    def get_all(cls, asset_class: Optional[str] = None, exchange: Optional[str] = None) -> List[Asset]:
+        if cls._cached_universe is None:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            query = "SELECT * FROM assets WHERE is_active = " + ("TRUE" if conn.is_postgres else "1") + " ORDER BY symbol ASC"
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            conn.close()
 
-        ph = "%s" if conn.is_postgres else "?"
-        query = "SELECT * FROM assets WHERE is_active = " + ("TRUE" if conn.is_postgres else "1")
-        params = []
+            if not rows:
+                from app.db.seed_universe import build_711_universe
+                cls._cached_universe = build_711_universe()
+                cls.save_many(cls._cached_universe)
+            else:
+                cls._cached_universe = [
+                    Asset(
+                        symbol=r["symbol"],
+                        name=r["name"],
+                        asset_class=AssetClass(r["asset_class"]),
+                        exchange=r["exchange"],
+                        sector=r["sector"],
+                        industry=r["industry"],
+                        currency=r["currency"],
+                        is_active=bool(r["is_active"]),
+                        requires_financials=bool(r["requires_financials"])
+                    )
+                    for r in rows
+                ]
 
+        assets = cls._cached_universe
         if asset_class:
-            query += f" AND asset_class = {ph}"
-            params.append(asset_class)
+            assets = [a for a in assets if a.asset_class.value == asset_class]
         if exchange:
-            query += f" AND exchange = {ph}"
-            params.append(exchange)
-
-        query += " ORDER BY symbol ASC"
-        cursor.execute(query, params)
-        rows = cursor.fetchall()
-        conn.close()
-
-        if not rows and not asset_class and not exchange:
-            # Otomatik fail-safe tohumlama
-            from app.db.seed_universe import build_711_universe
-            universe = build_711_universe()
-            AssetRepository.save_many(universe)
-            return universe
-
-        assets = []
-        for r in rows:
-            assets.append(Asset(
-                symbol=r["symbol"],
-                name=r["name"],
-                asset_class=AssetClass(r["asset_class"]),
-                exchange=r["exchange"],
-                sector=r["sector"],
-                industry=r["industry"],
-                currency=r["currency"],
-                is_active=bool(r["is_active"]),
-                requires_financials=bool(r["requires_financials"])
-            ))
+            assets = [a for a in assets if a.exchange == exchange]
         return assets
+
 
     @staticmethod
     def get_by_symbol(symbol: str) -> Optional[Asset]:
