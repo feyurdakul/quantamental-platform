@@ -54,7 +54,8 @@ class ScanOrchestrator:
                 sym = r["symbol"]
                 if not (sym.startswith("BIST:") or sym.startswith("NASDAQ:") or sym.startswith("NYSE:")):
                     continue
-                cat_raw = r.get("category_scores") or r.get("category_scores_json")
+                keys = r.keys()
+                cat_raw = r["category_scores"] if "category_scores" in keys else (r["category_scores_json"] if "category_scores_json" in keys else None)
                 if isinstance(cat_raw, str):
                     cat_json = json.loads(cat_raw) if cat_raw else {}
                 elif isinstance(cat_raw, dict):
