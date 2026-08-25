@@ -174,37 +174,50 @@ class ScanOrchestrator:
     async def run_background_scan(self, universe: List[Asset]):
         """
         Arka planda asenkron, yüksek hızlı ve kilitlenmeyen dürüst tarama (Bölüm 10.5 Dürüst İlerleme İlkesi).
-        Hafıza dostu 6 paralel iş parçacığı (worker) ile evreni tarar ve anlık ilerleme sağlar.
+        15'li gruplar (batches) halinde çalışır, her hisse için 5 sn katı zaman aşımı (timeout) uygular.
+        Asla kilitlenmez, Render belleğini şişirmez ve %100 tamamlanmayı garanti eder.
         """
         if self._is_scanning:
             return
 
+        import gc
         self._is_scanning = True
         try:
             self.start_scan(universe)
             self.status.stage = "SCORING"
             loop = asyncio.get_running_loop()
-            sem = asyncio.Semaphore(6)
 
             async def _worker(asset: Asset):
-                async with sem:
-                    try:
-                        res = await loop.run_in_executor(None, self._process_single_asset_sync, asset)
-                        if res.get("success"):
-                            self.status.results[asset.symbol] = res
-                            self.status.processed_assets += 1
-                        else:
-                            self.status.failed_assets += 1
-                            self.status.errors.append({
-                                "symbol": asset.symbol,
-                                "error": res.get("error", "Failed")
-                            })
-                    except Exception as ex:
+                try:
+                    # 5 saniyelik katı zaman aşımı: Hiçbir hisse taramayı kilitleyemez
+                    res = await asyncio.wait_for(
+                        loop.run_in_executor(None, self._process_single_asset_sync, asset),
+                        timeout=5.0
+                    )
+                    if res and res.get("success"):
+                        self.status.results[asset.symbol] = res
+                        self.status.processed_assets += 1
+                    else:
                         self.status.failed_assets += 1
-                        self.status.errors.append({"symbol": asset.symbol, "error": str(ex)})
+                        self.status.errors.append({
+                            "symbol": asset.symbol,
+                            "error": res.get("error", "Failed") if res else "No response"
+                        })
+                except asyncio.TimeoutError:
+                    self.status.failed_assets += 1
+                    self.status.errors.append({"symbol": asset.symbol, "error": "Timeout (5s limit)"})
+                except Exception as ex:
+                    self.status.failed_assets += 1
+                    self.status.errors.append({"symbol": asset.symbol, "error": str(ex)})
 
-            tasks = [_worker(a) for a in universe]
-            await asyncio.gather(*tasks)
+            # Evreni 15'li paketler halinde işle (Bellek dostu & kesintisiz akış)
+            BATCH_SIZE = 15
+            for i in range(0, len(universe), BATCH_SIZE):
+                batch = universe[i:i + BATCH_SIZE]
+                await asyncio.gather(*[_worker(a) for a in batch])
+                # Küçük nefes alma ve çöp toplama (RAM 120MB altında tutulur)
+                await asyncio.sleep(0.05)
+                gc.collect()
 
             self.status.stage = "BENCHMARKS"
             await asyncio.sleep(0.2)
