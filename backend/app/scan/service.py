@@ -181,18 +181,20 @@ class ScanOrchestrator:
             return
 
         import gc
+        from concurrent.futures import ThreadPoolExecutor
         self._is_scanning = True
         try:
             self.start_scan(universe)
             self.status.stage = "SCORING"
             loop = asyncio.get_running_loop()
+            executor = ThreadPoolExecutor(max_workers=10)
 
             async def _worker(asset: Asset):
                 try:
-                    # 5 saniyelik katı zaman aşımı: Hiçbir hisse taramayı kilitleyemez
+                    # 15 saniyelik güvenli zaman aşımı (yfinance normalde 1-2 sn sürer, asılı kalan istekler 15 sn'de atlanır)
                     res = await asyncio.wait_for(
-                        loop.run_in_executor(None, self._process_single_asset_sync, asset),
-                        timeout=5.0
+                        loop.run_in_executor(executor, self._process_single_asset_sync, asset),
+                        timeout=15.0
                     )
                     if res and res.get("success"):
                         self.status.results[asset.symbol] = res
@@ -205,19 +207,21 @@ class ScanOrchestrator:
                         })
                 except asyncio.TimeoutError:
                     self.status.failed_assets += 1
-                    self.status.errors.append({"symbol": asset.symbol, "error": "Timeout (5s limit)"})
+                    self.status.errors.append({"symbol": asset.symbol, "error": "Timeout (15s limit)"})
                 except Exception as ex:
                     self.status.failed_assets += 1
                     self.status.errors.append({"symbol": asset.symbol, "error": str(ex)})
 
-            # Evreni 15'li paketler halinde işle (Bellek dostu & kesintisiz akış)
-            BATCH_SIZE = 15
+            # Evreni 10'arlı paketler halinde işle (Bellek dostu & kesintisiz akış)
+            BATCH_SIZE = 10
             for i in range(0, len(universe), BATCH_SIZE):
                 batch = universe[i:i + BATCH_SIZE]
                 await asyncio.gather(*[_worker(a) for a in batch])
                 # Küçük nefes alma ve çöp toplama (RAM 120MB altında tutulur)
                 await asyncio.sleep(0.05)
                 gc.collect()
+
+            executor.shutdown(wait=False)
 
             self.status.stage = "BENCHMARKS"
             await asyncio.sleep(0.2)
