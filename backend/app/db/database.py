@@ -7,7 +7,9 @@ import os
 import sqlite3
 from typing import Optional, Any
 from pathlib import Path
+from dotenv import load_dotenv
 
+load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 DB_PATH = os.getenv("SQLITE_DB_PATH", str(Path(__file__).parent.parent.parent / "quantamental.db"))
 

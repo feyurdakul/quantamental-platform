@@ -54,20 +54,27 @@ class ScanOrchestrator:
                 sym = r["symbol"]
                 if not (sym.startswith("BIST:") or sym.startswith("NASDAQ:") or sym.startswith("NYSE:")):
                     continue
-                cat_json = json.loads(r["category_scores_json"]) if r["category_scores_json"] else {}
+                cat_raw = r.get("category_scores") or r.get("category_scores_json")
+                if isinstance(cat_raw, str):
+                    cat_json = json.loads(cat_raw) if cat_raw else {}
+                elif isinstance(cat_raw, dict):
+                    cat_json = cat_raw
+                else:
+                    cat_json = {}
+
                 self.status.results[sym] = {
                     "success": True,
                     "symbol": sym,
                     "score_result": ScoreResult(
                         symbol=sym,
-                        composite_score=r["composite_score"],
-                        confidence_level=r["confidence_level"],
-                        signal=SignalType(r["signal"]),
-                        coverage=r["coverage"],
+                        composite_score=float(r["composite_score"]) if r["composite_score"] is not None else 5.0,
+                        confidence_level=r["confidence_level"] if r["confidence_level"] else "MEDIUM",
+                        signal=SignalType(r["signal"]) if r["signal"] else SignalType.NEUTRAL,
+                        coverage=float(r["coverage"]) if r["coverage"] is not None else 0.5,
                         category_scores=cat_json,
-                        altman_z_score=r["altman_z_score"],
-                        piotroski_f_score=r["piotroski_f_score"],
-                        formula_version=r["formula_version"]
+                        altman_z_score=float(r["altman_z_score"]) if r["altman_z_score"] is not None else None,
+                        piotroski_f_score=int(r["piotroski_f_score"]) if r["piotroski_f_score"] is not None else None,
+                        formula_version=r["formula_version"] if r["formula_version"] else "v1.0"
                     ),
                     "technicals": {},
                     "valuation": {},
@@ -85,8 +92,8 @@ class ScanOrchestrator:
                 except Exception:
                     self.status.total_assets = len(self.status.results)
                 self.status.stage = "COMPLETED"
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Error loading cached scores: {e}")
 
     def start_scan(self, universe: List[Asset]) -> str:
         """Yeni bir tarama oturumu başlatır"""
@@ -261,17 +268,19 @@ class ScanOrchestrator:
                 cursor.execute("""
                 INSERT INTO score_results (
                     symbol, composite_score, confidence_level, signal, coverage,
-                    category_scores_json, altman_z_score, piotroski_f_score, formula_version, flags_json
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    category_scores, altman_z_score, piotroski_f_score, formula_version, flags, updated_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
                 ON CONFLICT (symbol) DO UPDATE SET
                     composite_score = EXCLUDED.composite_score,
                     confidence_level = EXCLUDED.confidence_level,
                     signal = EXCLUDED.signal,
                     coverage = EXCLUDED.coverage,
-                    category_scores_json = EXCLUDED.category_scores_json,
+                    category_scores = EXCLUDED.category_scores,
                     altman_z_score = EXCLUDED.altman_z_score,
                     piotroski_f_score = EXCLUDED.piotroski_f_score,
-                    flags_json = EXCLUDED.flags_json,
+                    formula_version = EXCLUDED.formula_version,
+                    flags = EXCLUDED.flags,
+                    updated_at = NOW(),
                     as_of_at = NOW()
                 """, (
                     sr.symbol, sr.composite_score, sr.confidence_level.value, sr.signal.value,
@@ -292,7 +301,7 @@ class ScanOrchestrator:
             conn.commit()
             conn.close()
         except Exception as e:
-            pass
+            print(f"Error saving score to DB for {sr.symbol if sr else 'unknown'}: {e}")
 
     def _generate_leaderboards(self) -> Dict[str, List[Dict[str, Any]]]:
         """
