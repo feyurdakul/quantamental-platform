@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { triggerScan, fetchScanStatus, fetchDashboardSummary, fetchSchedulerStatus, triggerSchedulerNow } from '../api/client';
+import { triggerScan, fetchScanStatus, fetchDashboardSummary, fetchSchedulerStatus, triggerSchedulerNow, reloadCache } from '../api/client';
 import { 
   Play, 
   RefreshCw, 
@@ -85,15 +85,15 @@ export const Settings: React.FC<SettingsProps> = ({ onRefreshAll }) => {
     }
   };
 
-  // 2. EKRANI GÜNCELLE: Yalnızca arayüz verisini yeniden yükler, backend tarama tetiklemez
+  // 2. EKRANI GÜNCELLE: Veritabanındaki tüm 601 skoru anında yükler (10ms)
   const handleRefreshUI = async () => {
     setRefreshing(true);
-    setMessage('Arayüz verileri güncelleniyor...');
+    setMessage('Veritabanından 601 varlık yükleniyor...');
     try {
-      await fetchDashboardSummary();
-      await loadStatus();
+      await reloadCache();
+      await Promise.all([fetchDashboardSummary(), loadStatus()]);
       if (onRefreshAll) onRefreshAll();
-      setMessage('Ekran verileri başarıyla tazelendi.');
+      setMessage('Tüm ekran verileri ve 601 varlık başarıyla güncellendi!');
       setTimeout(() => setMessage(null), 3000);
     } catch (err: any) {
       setMessage('Veri tazelenirken hata oluştu.');

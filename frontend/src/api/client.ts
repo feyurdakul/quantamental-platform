@@ -114,3 +114,10 @@ export async function triggerSchedulerNow() {
   return res.json();
 }
 
+export async function reloadCache() {
+  const res = await fetch(`${API_BASE}/scan/reload-cache`, { method: 'POST' });
+  if (!res.ok) throw new Error('Önbellek yenilenemedi');
+  return res.json();
+}
+
+

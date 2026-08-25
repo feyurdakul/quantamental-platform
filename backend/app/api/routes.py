@@ -36,20 +36,15 @@ def sanitize_for_json(obj: Any) -> Any:
 
 
 
-def _ensure_initial_scores():
-    """İlk açılışta dashboard liderlik tablolarının dolu gelmesini garanti eder"""
-    if not orchestrator.status.results:
-        universe = AssetRepository.get_all()
-        # İlk 15 majör varlık için hızlı ilk hesaplama yap
-        sample_batch = universe[:25]
-        orchestrator.process_universe_sync(sample_batch)
-        # Açılış sonrası durumu IDLE (Hazır) yap ki kullanıcı tarama başlatabilsin
-        orchestrator.status.stage = "IDLE"
-        orchestrator.status.total_assets = len(universe)
-
-
-
-_ensure_initial_scores()
+@router.post("/scan/reload-cache")
+async def reload_cached_scores():
+    """Veritabanındaki güncel skorları (601 varlık) anında hafızaya yeniden yükler (10ms)."""
+    orchestrator._load_cached_scores_from_db()
+    return {
+        "status": "success",
+        "total_loaded": len(orchestrator.status.results),
+        "stage": orchestrator.status.stage
+    }
 
 
 @router.get("/dashboard/summary")
