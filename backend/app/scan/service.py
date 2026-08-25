@@ -76,6 +76,15 @@ class ScanOrchestrator:
                     "liquidity": {},
                     "resilience": {"altman_z_score": r["altman_z_score"], "piotroski_f_score": {"score": r["piotroski_f_score"]}}
                 }
+            if self.status.results:
+                self.status.processed_assets = len(self.status.results)
+                try:
+                    from app.db.repositories import AssetRepository
+                    all_assets = AssetRepository.get_all()
+                    self.status.total_assets = len(all_assets)
+                except Exception:
+                    self.status.total_assets = len(self.status.results)
+                self.status.stage = "COMPLETED"
         except Exception:
             pass
 
@@ -165,7 +174,7 @@ class ScanOrchestrator:
     async def run_background_scan(self, universe: List[Asset]):
         """
         Arka planda asenkron, yüksek hızlı ve kilitlenmeyen dürüst tarama (Bölüm 10.5 Dürüst İlerleme İlkesi).
-        12 paralel iş parçacığı (worker) ile evreni saniyeler içinde tarar ve anlık ilerleme sağlar.
+        Hafıza dostu 6 paralel iş parçacığı (worker) ile evreni tarar ve anlık ilerleme sağlar.
         """
         if self._is_scanning:
             return
@@ -175,7 +184,7 @@ class ScanOrchestrator:
             self.start_scan(universe)
             self.status.stage = "SCORING"
             loop = asyncio.get_running_loop()
-            sem = asyncio.Semaphore(12)
+            sem = asyncio.Semaphore(6)
 
             async def _worker(asset: Asset):
                 async with sem:

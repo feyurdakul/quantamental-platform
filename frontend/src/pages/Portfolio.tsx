@@ -207,44 +207,44 @@ export const Portfolio: React.FC<PortfolioProps> = ({ onSelectAsset, onNavigateT
         </div>
       </div>
 
-      {/* Portföy Özet Şeridi (4 Kart) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+      {/* Portföy Özet Şeridi (Mobilde 2x2 Düzeni) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 md:gap-3.5">
         
-        <div className="bg-dark-800 border border-slate-800/80 p-4 rounded-md">
-          <p className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">Portföy Toplam Değeri</p>
-          <h3 className="text-xl font-bold text-white mt-1 font-mono">
+        <div className="bg-dark-800 border border-slate-800/80 p-3 md:p-4 rounded-md">
+          <p className="text-[9px] md:text-[10px] font-mono uppercase text-slate-400 tracking-wider truncate">Portföy Toplam Değeri</p>
+          <h3 className="text-base md:text-xl font-bold text-white mt-0.5 md:mt-1 font-mono truncate">
             {portfolio?.total_value ? `${portfolio.total_value.toLocaleString()} ₺` : '0 ₺'}
           </h3>
-          <p className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1 font-mono">
-            <Wallet className="w-3 h-3 text-blue-400" /> {portfolio?.position_count || 0} Aktif Hisse
+          <p className="text-[9px] md:text-[10px] text-slate-400 mt-0.5 flex items-center gap-1 font-mono truncate">
+            <Wallet className="w-2.5 h-2.5 md:w-3 md:h-3 text-blue-400 flex-shrink-0" /> {portfolio?.position_count || 0} Aktif Hisse
           </p>
         </div>
 
-        <div className="bg-dark-800 border border-slate-800/80 p-4 rounded-md">
-          <p className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">Toplam Alış Maliyeti</p>
-          <h3 className="text-xl font-bold text-slate-300 mt-1 font-mono">
+        <div className="bg-dark-800 border border-slate-800/80 p-3 md:p-4 rounded-md">
+          <p className="text-[9px] md:text-[10px] font-mono uppercase text-slate-400 tracking-wider truncate">Toplam Alış Maliyeti</p>
+          <h3 className="text-base md:text-xl font-bold text-slate-300 mt-0.5 md:mt-1 font-mono truncate">
             {portfolio?.total_cost ? `${portfolio.total_cost.toLocaleString()} ₺` : '0 ₺'}
           </h3>
-          <p className="text-[10px] text-slate-500 mt-0.5 font-mono">Kalıcı Supabase Depolu</p>
+          <p className="text-[9px] md:text-[10px] text-slate-500 mt-0.5 font-mono truncate">Kalıcı Supabase Depolu</p>
         </div>
 
-        <div className="bg-dark-800 border border-slate-800/80 p-4 rounded-md">
-          <p className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">Realize Edilmemiş Net K/Z</p>
-          <h3 className={`text-xl font-bold mt-1 font-mono flex items-center gap-1 ${
+        <div className="bg-dark-800 border border-slate-800/80 p-3 md:p-4 rounded-md">
+          <p className="text-[9px] md:text-[10px] font-mono uppercase text-slate-400 tracking-wider truncate">Net K/Z (Unrealized)</p>
+          <h3 className={`text-base md:text-xl font-bold mt-0.5 md:mt-1 font-mono flex items-center gap-1 truncate ${
             (portfolio?.total_pnl || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'
           }`}>
-            {(portfolio?.total_pnl || 0) >= 0 ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
-            {portfolio?.total_pnl ? `${portfolio.total_pnl.toLocaleString()} ₺` : '0 ₺'}
+            {(portfolio?.total_pnl || 0) >= 0 ? <ArrowUpRight className="w-4 h-4 flex-shrink-0" /> : <ArrowDownRight className="w-4 h-4 flex-shrink-0" />}
+            <span>{portfolio?.total_pnl ? `${portfolio.total_pnl.toLocaleString()} ₺` : '0 ₺'}</span>
           </h3>
-          <p className="text-[10px] text-emerald-400/80 mt-0.5 font-mono font-bold">
+          <p className="text-[9px] md:text-[10px] text-emerald-400/80 mt-0.5 font-mono font-bold truncate">
             Getiri: %{portfolio?.total_pnl_percent?.toFixed(2) || '0.00'}
           </p>
         </div>
 
-        <div className="bg-dark-800 border border-slate-800/80 p-4 rounded-md">
-          <p className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">Alım Kuralı Dağılımı</p>
-          <h3 className="text-sm font-bold text-blue-400 mt-1 font-mono">Strong Buy: %8-10 | Buy: %5-8</h3>
-          <p className="text-[10px] text-slate-400 mt-0.5 font-mono">Sat Sinyalinde Otomatik Çıkış</p>
+        <div className="bg-dark-800 border border-slate-800/80 p-3 md:p-4 rounded-md">
+          <p className="text-[9px] md:text-[10px] font-mono uppercase text-slate-400 tracking-wider truncate">Alım Kuralı</p>
+          <h3 className="text-xs md:text-sm font-bold text-blue-400 mt-0.5 md:mt-1 font-mono truncate">Strong: %10 | Buy: %7</h3>
+          <p className="text-[9px] md:text-[10px] text-slate-400 mt-0.5 font-mono truncate">Sat Sinyalinde Otomatik Çıkış</p>
         </div>
 
       </div>

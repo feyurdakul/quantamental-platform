@@ -89,67 +89,73 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectAsset, onNavigateT
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 md:space-y-5">
       
-      {/* 4'lü Üst İstatistik Şeridi */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+      {/* 4'lü Üst İstatistik Şeridi (Mobilde 2x2 Düzeni) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 md:gap-3.5">
         
-        <div className="bg-dark-800 border border-slate-800/80 p-4 rounded-md flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">Aktif Hisse Evreni</p>
-            <h3 className="text-xl font-bold text-white mt-1 font-mono">{data?.total_assets || 601} Hisse</h3>
-            <p className="text-[10px] text-blue-400 mt-0.5 flex items-center gap-1 font-mono">
-              <Layers className="w-3 h-3" /> BIST 100 & ABD Equities
+        {/* Kart 1: Aktif Hisse Evreni */}
+        <div className="bg-dark-800 border border-slate-800/80 p-3 md:p-4 rounded-md flex items-center justify-between">
+          <div className="min-w-0">
+            <p className="text-[9px] md:text-[10px] font-mono uppercase text-slate-400 tracking-wider truncate">Aktif Hisse Evreni</p>
+            <h3 className="text-base md:text-xl font-bold text-white mt-0.5 md:mt-1 font-mono">{data?.total_assets || 601} Hisse</h3>
+            <p className="text-[9px] md:text-[10px] text-emerald-400 mt-0.5 flex items-center gap-1 font-mono truncate">
+              <CheckCircle2 className="w-2.5 h-2.5 md:w-3 md:h-3 flex-shrink-0" /> BIST & US Stocks
             </p>
           </div>
-          <div className="w-9 h-9 rounded bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-            <Layers className="w-4 h-4" />
+          <div className="w-7 h-7 md:w-9 md:h-9 rounded bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 flex-shrink-0 ml-1">
+            <Layers className="w-3.5 h-3.5 md:w-4 md:h-4" />
           </div>
         </div>
 
-        <div className="bg-dark-800 border border-slate-800/80 p-4 rounded-md flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">Tarama Durumu</p>
-            <h3 className="text-xl font-bold text-emerald-400 mt-1 font-mono">{data?.scan_stage || 'HAZIR'}</h3>
-            <p className="text-[10px] text-emerald-400/80 mt-0.5 flex items-center gap-1 font-mono">
-              <CheckCircle2 className="w-3 h-3" /> {data?.processed_assets || data?.total_assets || 0} Hisse İşlendi
+        {/* Kart 2: Ortalama Skor */}
+        <div className="bg-dark-800 border border-slate-800/80 p-3 md:p-4 rounded-md flex items-center justify-between">
+          <div className="min-w-0">
+            <p className="text-[9px] md:text-[10px] font-mono uppercase text-slate-400 tracking-wider truncate">Evren Ort. Skor</p>
+            <h3 className="text-base md:text-xl font-bold text-white mt-0.5 md:mt-1 font-mono">
+              {data?.average_score ? data.average_score.toFixed(1) : '5.8'} <span className="text-xs text-slate-500">/ 10</span>
+            </h3>
+            <p className="text-[9px] md:text-[10px] text-blue-400 mt-0.5 flex items-center gap-1 font-mono truncate">
+              <Zap className="w-2.5 h-2.5 md:w-3 md:h-3 flex-shrink-0" /> 10'luk Kantitatif
             </p>
           </div>
-          <div className="w-9 h-9 rounded bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-            <ShieldCheck className="w-4 h-4" />
+          <div className="w-7 h-7 md:w-9 md:h-9 rounded bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 flex-shrink-0 ml-1">
+            <ShieldCheck className="w-3.5 h-3.5 md:w-4 md:h-4" />
           </div>
         </div>
 
-        <div className="bg-dark-800 border border-slate-800/80 p-4 rounded-md flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">Veri Sağlayıcılar</p>
-            <h3 className="text-xl font-bold text-white mt-1 font-mono">7 / 7 Online</h3>
-            <p className="text-[10px] text-purple-400 mt-0.5 flex items-center gap-1 font-mono">
-              <Zap className="w-3 h-3" /> TV, GF, FRED, YF, FMP, İŞ, FH
-            </p>
+        {/* Kart 3: Sinyal Gücü */}
+        <div className="bg-dark-800 border border-slate-800/80 p-3 md:p-4 rounded-md flex items-center justify-between">
+          <div className="min-w-0">
+            <p className="text-[9px] md:text-[10px] font-mono uppercase text-slate-400 tracking-wider truncate">Al/Sat Oranı</p>
+            <h3 className="text-base md:text-xl font-bold text-emerald-400 mt-0.5 md:mt-1 font-mono">
+              {topPotential.length} AL <span className="text-xs text-slate-500">/ {mostRisky.length} SAT</span>
+            </h3>
+            <p className="text-[9px] md:text-[10px] text-slate-400 mt-0.5 font-mono truncate">Konsensüs Sinyali</p>
           </div>
-          <div className="w-9 h-9 rounded bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
-            <Zap className="w-4 h-4" />
+          <div className="w-7 h-7 md:w-9 md:h-9 rounded bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0 ml-1">
+            <TrendingUp className="w-3.5 h-3.5 md:w-4 md:h-4" />
           </div>
         </div>
 
-        <div className="bg-dark-800 border border-slate-800/80 p-4 rounded-md flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">Veri Tazeliği</p>
-            <h3 className="text-xl font-bold text-white mt-1 font-mono">Canlı Akış</h3>
-            <p className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1 font-mono">
-              <Clock className="w-3 h-3" /> Anlık SSE & WebSocket
+        {/* Kart 4: Veri Tazeliği */}
+        <div className="bg-dark-800 border border-slate-800/80 p-3 md:p-4 rounded-md flex items-center justify-between">
+          <div className="min-w-0">
+            <p className="text-[9px] md:text-[10px] font-mono uppercase text-slate-400 tracking-wider truncate">Veri Tazeliği</p>
+            <h3 className="text-base md:text-xl font-bold text-white mt-0.5 md:mt-1 font-mono">Canlı Akış</h3>
+            <p className="text-[9px] md:text-[10px] text-slate-400 mt-0.5 flex items-center gap-1 font-mono truncate">
+              <Clock className="w-2.5 h-2.5 md:w-3 md:h-3 flex-shrink-0" /> SSE & WebSocket
             </p>
           </div>
-          <div className="w-9 h-9 rounded bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-            <Clock className="w-4 h-4" />
+          <div className="w-7 h-7 md:w-9 md:h-9 rounded bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 flex-shrink-0 ml-1">
+            <Clock className="w-3.5 h-3.5 md:w-4 md:h-4" />
           </div>
         </div>
 
       </div>
 
       {/* Varlık Sınıfı Filtre Sekmeleri */}
-      <div className="flex items-center gap-1 bg-dark-800/60 p-1 rounded-md border border-slate-800/80 overflow-x-auto">
+      <div className="flex items-center gap-1 bg-dark-800/60 p-1 rounded-md border border-slate-800/80 overflow-x-auto no-scrollbar">
         {[
           { id: 'ALL', label: 'TÜM HİSSELER' },
           { id: 'BIST', label: '🇹🇷 BIST 100' },
@@ -158,7 +164,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectAsset, onNavigateT
           <button
             key={tab.id}
             onClick={() => setSelectedClass(tab.id)}
-            className={`px-3 py-1.5 rounded text-[11px] font-mono font-medium transition-colors whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded text-[11px] font-mono font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
               selectedClass === tab.id
                 ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30 font-semibold'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'

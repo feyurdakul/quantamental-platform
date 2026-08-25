@@ -125,7 +125,8 @@ export const Settings: React.FC<SettingsProps> = ({ onRefreshAll }) => {
   };
 
   const statusInfo = getStatusDisplay();
-  const progressPercent = status?.total ? Math.round((status.processed / status.total) * 100) : 0;
+  const isCompleted = status?.stage === 'COMPLETED';
+  const progressPercent = status?.total ? Math.min(100, Math.round((status.processed / status.total) * 100)) : (isCompleted ? 100 : 0);
 
   const providers = [
     { name: 'isyatirimhisse v5.0.1', desc: 'BIST Resmi KAP/UFRS Bilançoları & TMS-29 USD Bilanço', status: 'Online', badge: 'BIST Temel' },
@@ -138,21 +139,21 @@ export const Settings: React.FC<SettingsProps> = ({ onRefreshAll }) => {
   ];
 
   return (
-    <div className="space-y-5 max-w-5xl">
+    <div className="space-y-4 md:space-y-5 max-w-5xl">
       
       {/* Yan Yana 2 Aksiyon Kartı: TARAMAYI BAŞLAT ve EKRANI GÜNCELLE */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
         
         {/* Kart 1: TARAMAYI BAŞLAT */}
-        <div className="bg-dark-800 border border-slate-800/80 p-5 rounded-md flex flex-col justify-between">
+        <div className="bg-dark-800 border border-slate-800/80 p-3.5 md:p-5 rounded-md flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-600/20 text-blue-400 border border-blue-500/30 font-semibold">
+              <span className="text-[9px] md:text-[10px] font-mono px-2 py-0.5 rounded bg-blue-600/20 text-blue-400 border border-blue-500/30 font-semibold">
                 MOTOR KONTROLÜ
               </span>
-              <span className="text-xs font-mono text-slate-500">{status?.total || 606} Varlık</span>
+              <span className="text-xs font-mono text-slate-500">{status?.total || 601} Varlık</span>
             </div>
-            <h3 className="text-base font-bold text-white font-mono">TARAMAYI BAŞLAT</h3>
+            <h3 className="text-sm md:text-base font-bold text-white font-mono">TARAMAYI BAŞLAT</h3>
             <p className="text-xs text-slate-400 mt-1 leading-relaxed">
               Arka planda tüm 7 veri sağlayıcıdan güncel fiyat ve tabloları çekerek 10'luk skorları ve liderlik listelerini baştan hesaplar.
             </p>
@@ -182,15 +183,15 @@ export const Settings: React.FC<SettingsProps> = ({ onRefreshAll }) => {
         </div>
 
         {/* Kart 2: EKRANI GÜNCELLE */}
-        <div className="bg-dark-800 border border-slate-800/80 p-5 rounded-md flex flex-col justify-between">
+        <div className="bg-dark-800 border border-slate-800/80 p-3.5 md:p-5 rounded-md flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-700/50 text-slate-300 border border-slate-600/50 font-semibold">
+              <span className="text-[9px] md:text-[10px] font-mono px-2 py-0.5 rounded bg-slate-700/50 text-slate-300 border border-slate-600/50 font-semibold">
                 ARAYÜZ TAZELENMESİ
               </span>
               <span className="text-xs font-mono text-slate-500">Salt Okunur</span>
             </div>
-            <h3 className="text-base font-bold text-white font-mono">EKRANI GÜNCELLE</h3>
+            <h3 className="text-sm md:text-base font-bold text-white font-mono">EKRANI GÜNCELLE</h3>
             <p className="text-xs text-slate-400 mt-1 leading-relaxed">
               Arayüz verilerini ve son hesaplanmış veritabanı skorlarını yeniden okur. Dış sağlayıcı çağrısı yapmaz ve tarama başlatmaz.
             </p>
@@ -213,7 +214,7 @@ export const Settings: React.FC<SettingsProps> = ({ onRefreshAll }) => {
       </div>
 
       {/* Tarama Durumu ve Dürüst İlerleme Paneli */}
-      <div className="bg-dark-800 border border-slate-800/80 p-5 rounded-md space-y-4">
+      <div className="bg-dark-800 border border-slate-800/80 p-3.5 md:p-5 rounded-md space-y-4">
         <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
           <div className="flex items-center gap-2">
             <Server className="w-4 h-4 text-blue-400" />
@@ -229,26 +230,26 @@ export const Settings: React.FC<SettingsProps> = ({ onRefreshAll }) => {
 
         {/* İlerleme Çubuğu */}
         <div>
-          <div className="flex justify-between items-center text-xs font-mono mb-1.5">
+          <div className="flex justify-between items-center text-xs font-mono mb-1.5 flex-wrap gap-1">
             <span className="text-slate-400">
-              İlerleme: <strong className="text-white">%{progressPercent}</strong>
+              İlerleme: <strong className={isCompleted ? "text-emerald-400" : "text-white"}>%{progressPercent}</strong>
             </span>
             <span className="text-slate-400">
-              İşlenen: <strong className="text-white">{status?.processed || 0}</strong> / {status?.total || 606}
-              <span className="text-slate-500 ml-2">(Hata: {status?.failed || 0})</span>
+              İşlenen: <strong className="text-white">{status?.processed || (isCompleted ? status?.total || 601 : 0)}</strong> / {status?.total || 601}
+              <span className="text-slate-500 ml-1.5">(Hata: {status?.failed || 0})</span>
             </span>
           </div>
 
           <div className="w-full h-2 bg-dark-900 rounded-full overflow-hidden border border-slate-800">
             <div
-              className="h-full bg-blue-500 transition-all duration-300 rounded-full"
+              className={`h-full transition-all duration-300 rounded-full ${isCompleted ? 'bg-emerald-500' : 'bg-blue-500'}`}
               style={{ width: `${progressPercent}%` }}
             />
           </div>
 
-          <div className="mt-3 flex justify-between text-[11px] font-mono text-slate-500">
+          <div className="mt-3 flex justify-between text-[10px] md:text-[11px] font-mono text-slate-500 flex-wrap gap-1">
             <span>Aşama Kodu: {status?.stage || 'IDLE'}</span>
-            <span>Son Güncelleme: {status?.completed_at ? new Date(status.completed_at).toLocaleTimeString() : 'Hazır'}</span>
+            <span>Son Güncelleme: {status?.completed_at ? new Date(status.completed_at).toLocaleTimeString('tr-TR') : 'Hazır'}</span>
           </div>
 
           {message && (
