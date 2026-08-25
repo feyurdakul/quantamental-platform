@@ -39,7 +39,13 @@ app.include_router(api_router)
 app.include_router(portfolio_router)
 
 
-@app.get("/health")
+@app.get("/")
+@app.head("/")
+async def root_ping():
+    return {"status": "online", "service": "Quantamental Platform Backend"}
+
+
+@app.api_route("/health", methods=["GET", "HEAD"])
 async def health_check():
     return {
         "status": "healthy",
