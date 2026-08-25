@@ -27,7 +27,7 @@ export function App() {
 
   useEffect(() => {
     loadStatus();
-    const timer = setInterval(loadStatus, 2500);
+    const timer = setInterval(loadStatus, 3500);
     return () => clearInterval(timer);
   }, []);
 

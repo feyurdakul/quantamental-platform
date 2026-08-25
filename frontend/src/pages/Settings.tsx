@@ -58,7 +58,7 @@ export const Settings: React.FC<SettingsProps> = ({ onRefreshAll }) => {
     const interval = setInterval(() => {
       loadStatus();
       loadScheduler();
-    }, 1000);
+    }, 3000);
     return () => clearInterval(interval);
   }, []);
 
