@@ -164,7 +164,8 @@ class ScanOrchestrator:
 
     async def run_background_scan(self, universe: List[Asset]):
         """
-        Arka planda asenkron ve kilitlenmeyen dürüst tarama (Bölüm 10.5 Dürüst İlerleme İlkesi).
+        Arka planda asenkron, yüksek hızlı ve kilitlenmeyen dürüst tarama (Bölüm 10.5 Dürüst İlerleme İlkesi).
+        12 paralel iş parçacığı (worker) ile evreni saniyeler içinde tarar ve anlık ilerleme sağlar.
         """
         if self._is_scanning:
             return
@@ -172,30 +173,29 @@ class ScanOrchestrator:
         self._is_scanning = True
         try:
             self.start_scan(universe)
-            self.status.stage = "FETCHING"
+            self.status.stage = "SCORING"
             loop = asyncio.get_running_loop()
+            sem = asyncio.Semaphore(12)
 
-            for asset in universe:
-                self.status.stage = "SCORING"
-                try:
-                    # Thread pool executor içinde senkron blocking çağrıları çalıştır (Event loop donmaz)
-                    res = await loop.run_in_executor(None, self._process_single_asset_sync, asset)
-
-                    if res.get("success"):
-                        self.status.results[asset.symbol] = res
-                        self.status.processed_assets += 1
-                    else:
+            async def _worker(asset: Asset):
+                async with sem:
+                    try:
+                        res = await loop.run_in_executor(None, self._process_single_asset_sync, asset)
+                        if res.get("success"):
+                            self.status.results[asset.symbol] = res
+                            self.status.processed_assets += 1
+                        else:
+                            self.status.failed_assets += 1
+                            self.status.errors.append({
+                                "symbol": asset.symbol,
+                                "error": res.get("error", "Failed")
+                            })
+                    except Exception as ex:
                         self.status.failed_assets += 1
-                        self.status.errors.append({
-                            "symbol": asset.symbol,
-                            "error": res.get("error", "Failed")
-                        })
-                except Exception as ex:
-                    self.status.failed_assets += 1
-                    self.status.errors.append({"symbol": asset.symbol, "error": str(ex)})
+                        self.status.errors.append({"symbol": asset.symbol, "error": str(ex)})
 
-                # Her varlık sonrası event loop'a nefes aldır (Frontend canlı progress okur)
-                await asyncio.sleep(0.02)
+            tasks = [_worker(a) for a in universe]
+            await asyncio.gather(*tasks)
 
             self.status.stage = "BENCHMARKS"
             await asyncio.sleep(0.2)

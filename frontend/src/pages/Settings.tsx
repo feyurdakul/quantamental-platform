@@ -58,18 +58,27 @@ export const Settings: React.FC<SettingsProps> = ({ onRefreshAll }) => {
     const interval = setInterval(() => {
       loadStatus();
       loadScheduler();
-    }, 2000);
+    }, 1000);
     return () => clearInterval(interval);
   }, []);
 
   // 1. TARAMAYI BAŞLAT: Yalnızca scan endpoint'ini çağırır
   const handleStartScan = async () => {
     setScanning(true);
-    setMessage('Tarama isteği gönderildi...');
+    setMessage('Tarama başlatılıyor...');
     try {
-      await triggerScan();
-      setMessage('Tarama başlatıldı.');
-      loadStatus();
+      const res = await triggerScan();
+      setMessage('Tarama başlatıldı. İlerleme işleniyor...');
+      if (res && res.total_assets) {
+        setStatus((prev: any) => ({
+          ...(prev || {}),
+          stage: 'SCORING',
+          total: res.total_assets,
+          processed: 0,
+          failed: 0
+        }));
+      }
+      setTimeout(loadStatus, 400);
     } catch (err: any) {
       setMessage(`Tarama hatası: ${err.message}`);
       setScanning(false);
@@ -96,7 +105,7 @@ export const Settings: React.FC<SettingsProps> = ({ onRefreshAll }) => {
   // Görsel Sözleşme Metin Eşlemesi
   const getStatusDisplay = () => {
     if (backendError) return { text: 'TARAMA DURUMU ALINAMADI', color: 'text-rose-400', badge: 'bg-rose-500/10 border-rose-500/30' };
-    if (!status) return { text: 'TARAMA YANIT BEKLİYOR', color: 'text-amber-400', badge: 'bg-amber-500/10 border-amber-500/30' };
+    if (!status) return { text: 'HAZIR / BEKLEMEDE', color: 'text-slate-400', badge: 'bg-slate-800 border-slate-700' };
 
     switch (status.stage) {
       case 'INIT':
@@ -141,7 +150,7 @@ export const Settings: React.FC<SettingsProps> = ({ onRefreshAll }) => {
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-600/20 text-blue-400 border border-blue-500/30 font-semibold">
                 MOTOR KONTROLÜ
               </span>
-              <span className="text-xs font-mono text-slate-500">{status?.total || 668} Varlık</span>
+              <span className="text-xs font-mono text-slate-500">{status?.total || 606} Varlık</span>
             </div>
             <h3 className="text-base font-bold text-white font-mono">TARAMAYI BAŞLAT</h3>
             <p className="text-xs text-slate-400 mt-1 leading-relaxed">
@@ -225,7 +234,7 @@ export const Settings: React.FC<SettingsProps> = ({ onRefreshAll }) => {
               İlerleme: <strong className="text-white">%{progressPercent}</strong>
             </span>
             <span className="text-slate-400">
-              İşlenen: <strong className="text-white">{status?.processed || 0}</strong> / {status?.total || 668}
+              İşlenen: <strong className="text-white">{status?.processed || 0}</strong> / {status?.total || 606}
               <span className="text-slate-500 ml-2">(Hata: {status?.failed || 0})</span>
             </span>
           </div>

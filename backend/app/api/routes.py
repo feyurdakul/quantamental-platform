@@ -143,16 +143,16 @@ async def start_universe_scan():
     10.5 Tam Taramayı Arka Planda Başlatma (Non-blocking Asenkron)
     """
     universe = AssetRepository.get_all()
-    # Durumu hemen INIT / FETCHING olarak işaretle
+    # Durumu hemen SCORING olarak işaretle ve arka plana at
     orchestrator.start_scan(universe)
-    # Arka plan görevi olarak çalıştır
+    orchestrator.status.stage = "SCORING"
     asyncio.create_task(orchestrator.run_background_scan(universe))
     
     return {
         "message": "Evren taraması arka planda başarıyla başlatıldı.",
         "run_id": orchestrator.status.current_run_id,
         "total_assets": len(universe),
-        "stage": "INIT"
+        "stage": "SCORING"
     }
 
 
